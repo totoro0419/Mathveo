@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Mathveo — レスポンシブ確認</title>
+    <style>
+      body {
+        margin: 0;
+        background: #e2e8f2;
+        font: 14px system-ui;
+        color: #14274a;
+        min-width: max-content;
+      }
+      header {
+        padding: 14px 20px;
+        background: white;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+      label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      select {
+        font: inherit;
+        padding: 7px;
+        border: 1px solid #ccd6e6;
+        border-radius: 6px;
+      }
+      main {
+        padding: 16px;
+      }
+      iframe {
+        display: block;
+        border: 0;
+        background: #f8faff;
+        box-shadow: 0 3px 20px #14274a18;
+      }
+      p {
+        margin: 0;
+        font-size: 12px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Mathveo / 表示確認</strong
+      ><label
+        >画面幅<select id="device">
+          <option value="390">スマートフォン 390px</option>
+          <option value="820">タブレット 820px</option>
+          <option value="1440">PC 1440px</option>
+          <option value="320">最小幅 320px</option>
+        </select></label
+      ><label
+        >画面<select id="screen">
+          <option value="home">ホーム</option>
+          <option value="library">ライブラリ</option>
+          <option value="watch/completing-square">動画視聴</option>
+          <option value="material/completing-square">数学教材</option>
+          <option value="review">復習・記録</option>
+          <option value="search">検索</option>
+        </select></label
+      ><label
+        >文字<select id="text-scale">
+          <option value="1">100%</option>
+          <option value="2">200%</option>
+        </select></label
+      >
+      <p>
+        同じアプリを独立したビューポートで表示。実機・タッチ操作の検証とは別です。
+      </p>
+    </header>
+    <main>
+      <iframe
+        id="app-preview"
+        title="Mathveo アプリのレスポンシブ表示"
+      ></iframe>
+    </main>
+    <script>
+      const query = new URLSearchParams(location.search),
+        device = document.getElementById("device"),
+        screen = document.getElementById("screen"),
+        scale = document.getElementById("text-scale"),
+        frame = document.getElementById("app-preview");
+      const widths = [320, 390, 820, 1440];
+      const candidate = Number(query.get("width"));
+      device.value = String(widths.includes(candidate) ? candidate : 390);
+      if (
+        Array.from(screen.options).some((o) => o.value === query.get("screen"))
+      )
+        screen.value = query.get("screen");
+      function update() {
+        const width = Number(device.value);
+        frame.width = width;
+        frame.height = width < 768 ? 844 : width < 1100 ? 1180 : 1000;
+        frame.src = "./#/" + screen.value;
+        history.replaceState(
+          null,
+          "",
+          "?width=" + width + "&screen=" + encodeURIComponent(screen.value),
+        );
+      }
+      function applyTextScale() {
+        frame.contentDocument?.documentElement.style.setProperty(
+          "font-size",
+          15 * Number(scale.value) + "px",
+          "important",
+        );
+      }
+      frame.addEventListener("load", applyTextScale);
+      scale.addEventListener("change", applyTextScale);
+      device.addEventListener("change", update);
+      screen.addEventListener("change", update);
+      update();
+    </script>
+  </body>
+</html>

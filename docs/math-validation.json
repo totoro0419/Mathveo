@@ -1,0 +1,17 @@
+{
+  "engine": "SymPy 1.14.0",
+  "checks": {
+    "general_square_identity": true,
+    "unit_square_identity": true,
+    "square_example_every_step": true,
+    "square_example_vertex": true,
+    "symmetry": true,
+    "general_vertex": true,
+    "vertex_example": true,
+    "interval_example_identity": true,
+    "interval_example_extrema": true,
+    "square_quiz": true,
+    "interval_quiz": true
+  },
+  "all_passed": true
+}

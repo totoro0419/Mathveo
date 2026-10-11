@@ -1,0 +1,12 @@
+node_modules/
+.venv/
+dist/
+.env
+.env.*
+!.env.example
+.sites-runtime/
+*.tsbuildinfo
+data/youtube-catalog.json
+data/sync-report.json
+qa/artifacts/
+*.tmp
