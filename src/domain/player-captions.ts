@@ -66,13 +66,13 @@ export function applyCaptions(
     const loaded = modules.includes("captions");
     if (!enabled) {
       if (!loaded) return "applied";
-      if (typeof player.unloadModule === "function") {
-        player.unloadModule("captions");
-        return "waiting";
-      }
       const options = player.getOptions("captions");
       if (options.includes("track") && player.setOption) {
         player.setOption("captions", "track", {});
+        return "waiting";
+      }
+      if (typeof player.unloadModule === "function") {
+        player.unloadModule("captions");
         return "waiting";
       }
       return "unavailable";

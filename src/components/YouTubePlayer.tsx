@@ -194,7 +194,7 @@ export function YouTubePlayer({
       const next =
         result === "unavailable"
           ? { state: "unavailable" as const, canToggle: false }
-          : !matches && snapshot.state !== "unavailable"
+          : captionTimer && !matches && snapshot.state !== "unavailable"
             ? { state: "loading" as const, canToggle: false }
             : snapshot;
       setCaptions((previous) =>
