@@ -47,7 +47,18 @@ export function searchCatalog(query: string) {
       ),
     ),
     videos: videos.filter((v) =>
-      matches(v.title + " " + (v.description ?? "") + " 数学Ⅰ 二次関数"),
+      matches(
+        [
+          v.title,
+          v.description ?? "",
+          ...v.currentSubjects.map(
+            (id) => subjects.find((s) => s.id === id)?.name ?? "",
+          ),
+          ...v.playlistIds.map(
+            (id) => officialPlaylists.find((p) => p.id === id)?.title ?? "",
+          ),
+        ].join(" "),
+      ),
     ),
     subjects: subjects.filter((s) => matches(s.name + " " + s.units.join(" "))),
     playlists: officialPlaylists.filter((p) =>

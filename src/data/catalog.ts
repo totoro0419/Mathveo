@@ -1,3 +1,4 @@
+import { registeredVideos } from "./video-library";
 import type {
   SubjectId,
   Topic,
@@ -108,7 +109,7 @@ const manual = {
   playlistIds: [] as string[],
 };
 
-export const videos: VideoRecord[] = [
+const representativeVideos: VideoRecord[] = [
   {
     ...manual,
     id: "P84CrKaIob0",
@@ -130,6 +131,12 @@ export const videos: VideoRecord[] = [
     thumbnail: "https://i.ytimg.com/vi/jTx2zwMW6Ho/hqdefault.jpg",
   },
 ];
+
+export const videos: VideoRecord[] = Array.from(
+  new Map(
+    [...representativeVideos, ...registeredVideos].map((v) => [v.id, v]),
+  ).values(),
+);
 
 export const topics: Topic[] = [
   {

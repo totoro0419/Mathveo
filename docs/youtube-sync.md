@@ -69,3 +69,9 @@ APIクォータは呼び出し種別・ページ数によって消費します�
 - [Push notifications](https://developers.google.com/youtube/v3/guides/push_notifications)
 - [Developer Policies](https://developers.google.com/youtube/terms/developer-policies)
 - [IFrame Player API](https://developers.google.com/youtube/iframe_api_reference)
+
+## 2026-10-12：個別動画の初回収録
+
+公式サイトの45単元を、公式IFrame Player APIの`getPlaylist()`で照合しました。単元内の所属を合計すると1,053件、Video IDで重複を除くと1,022本です。公開アップロード一覧の取得を代替したものではなく、再生リスト外の動画・新着の網羅性は未確認です。
+
+タイトル・投稿者・サムネイルはYouTube公式oEmbedで取得します。公開日時・説明文・Data API上の埋め込み可否はnullで保持します。IFrame APIで取得した動画ID、oEmbedで取得したメタデータ、未取得のフィールドを区別します。公式資料：https://developers.google.com/youtube/iframe_api_reference#Retrieving_playlist_information 。

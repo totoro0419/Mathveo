@@ -2023,6 +2023,281 @@ main:focus {
   gap: 28px;
   align-items: start;
 }
+
+/* Individually registered lessons: browsing and playback have distinct URLs. */
+.unit-library-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 28px;
+  align-items: start;
+}
+.unit-library-layout > section,
+.individual-video-main {
+  min-width: 0;
+}
+.lesson-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px 18px;
+}
+.lesson-card {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: white;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
+}
+.lesson-card:hover {
+  border-color: #b6cdf5;
+  box-shadow: 0 5px 18px #14274a0b;
+}
+.lesson-card-image {
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: var(--surface);
+}
+.lesson-card-image > img,
+.lesson-card-image > .thumbnail-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lesson-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  color: white;
+  opacity: 0;
+  background: #14274a35;
+  transition: opacity 0.18s;
+}
+.lesson-card:hover .lesson-play,
+.lesson-card:focus-visible .lesson-play {
+  opacity: 1;
+}
+.lesson-completed {
+  position: absolute;
+  bottom: 9px;
+  right: 9px;
+  background: white;
+  color: var(--primary);
+  border-radius: 5px;
+  font-size: 0.65rem;
+  padding: 4px 7px;
+}
+.lesson-card-body {
+  padding: 15px 16px 18px;
+}
+.lesson-order {
+  color: #7890ae;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+.lesson-card h2 {
+  font-size: 0.84rem;
+  line-height: 1.7;
+  margin-top: 7px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.individual-video-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 28px;
+  margin-top: 25px;
+}
+.individual-video-heading {
+  margin-top: 23px;
+}
+.individual-video-heading h1 {
+  font-size: 1.28rem;
+  line-height: 1.65;
+  margin-top: 8px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.lesson-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 20px 0 24px;
+}
+.lesson-step-controls {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.compact-video-details {
+  border-top: 1px solid var(--border);
+  padding: 0;
+  margin: 0;
+}
+.compact-video-details summary {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: #5c7494;
+}
+.compact-video-details p {
+  padding: 0 4px 12px;
+}
+.compact-video-details[open] summary > svg {
+  transform: rotate(90deg);
+}
+.video-note-label {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  color: #627b9d;
+}
+.individual-video-note {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  margin-bottom: 20px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.lesson-queue {
+  min-width: 0;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.lesson-queue-heading {
+  padding: 20px 20px 17px;
+  border-bottom: 1px solid var(--border);
+}
+.lesson-queue-heading h2 {
+  font-size: 0.96rem;
+  margin-top: 7px;
+}
+.lesson-queue-heading p {
+  font-size: 0.72rem;
+  color: #7890ae;
+  margin-top: 7px;
+}
+.lesson-queue nav {
+  max-height: 560px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.lesson-queue nav a {
+  display: grid;
+  grid-template-columns: 23px minmax(0, 1fr) 14px;
+  gap: 10px;
+  padding: 15px 17px;
+  align-items: center;
+  font-size: 0.73rem;
+  line-height: 1.65;
+  border-bottom: 1px solid #eef2f8;
+}
+.lesson-queue nav a > span:nth-child(2) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.lesson-queue nav a:hover {
+  background: #f5f8ff;
+}
+.lesson-queue nav a.active {
+  color: var(--primary);
+  background: #edf3ff;
+}
+.lesson-queue nav a > svg {
+  color: #8aa1bf;
+}
+.lesson-all-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 0 20px;
+  color: var(--primary);
+  font-size: 0.74rem;
+}
+@media (max-width: 1200px) {
+  .lesson-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .unit-library-layout {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+  .individual-video-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 22px;
+  }
+}
+@media (max-width: 1100px) {
+  .unit-library-layout,
+  .individual-video-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .unit-page .playlist-unit-guide {
+    display: none;
+  }
+  .lesson-queue nav {
+    max-height: 460px;
+  }
+  .lesson-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 680px) {
+  .lesson-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px 12px;
+  }
+  .lesson-card-body {
+    padding: 12px;
+  }
+  .lesson-card h2 {
+    font-size: 0.75rem;
+  }
+  .individual-video-layout {
+    margin-top: 18px;
+  }
+  .individual-video-heading h1 {
+    font-size: 1.05rem;
+  }
+  .individual-video-main .player-frame {
+    min-height: 200px;
+  }
+  .lesson-queue nav {
+    max-height: 400px;
+  }
+  .lesson-actions {
+    align-items: flex-start;
+  }
+}
+@media (max-width: 370px) {
+  .lesson-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .playlist-study-main {
   min-width: 0;
 }
@@ -3984,8 +4259,13 @@ main:focus {
   .about-content p {
     font-size: 0.93rem;
   }
-  .main-content, .main-content.wide { padding-bottom: calc(4rem + 24px + env(safe-area-inset-bottom)); }
-  .toast { bottom: calc(4rem + 28px + env(safe-area-inset-bottom)); }
+  .main-content,
+  .main-content.wide {
+    padding-bottom: calc(4rem + 24px + env(safe-area-inset-bottom));
+  }
+  .toast {
+    bottom: calc(4rem + 28px + env(safe-area-inset-bottom));
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   *,

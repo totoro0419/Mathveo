@@ -16,7 +16,12 @@ export interface VideoRecord {
   embeddable: boolean | null;
   fetchedAt: string;
   updatedAt: string;
-  source: "youtube-data-api" | "manual-oembed";
+  source:
+    | "youtube-data-api"
+    | "manual-oembed"
+    | "youtube-oembed"
+    | "youtube-iframe-api";
+  channelUrl?: string | null;
   originalSubject: string;
   currentSubjects: SubjectId[];
   classification: "verified" | "needs-review";

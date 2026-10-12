@@ -1,46 +1,29 @@
-import { useState } from "react";
-import {
-  ArrowRight,
-  BookOpen,
-  ChevronRight,
-  ExternalLink,
-  Play,
-  RotateCcw,
-} from "lucide-react";
+import { ArrowRight, BookOpen, ChevronRight, Play } from "lucide-react";
 import { officialPlaylists } from "../data/playlists";
 import type { OfficialPlaylist } from "../data/playlists";
-import { QUADRATIC_PLAYLIST, subjects, topics } from "../data/catalog";
+import { subjects, QUADRATIC_PLAYLIST, topics } from "../data/catalog";
+import { unitVideos } from "../data/video-library";
+import { VideoThumbnail } from "./VideoThumbnail";
+import type { LearningStore } from "../hooks/useLearning";
 
+/** Legacy playlist URLs resolve to the unit's individually registered videos. */
 export function PlaylistStudy({
   playlist,
   mode,
-  offline,
+  learning,
 }: {
   playlist: OfficialPlaylist;
   mode: "current" | "official";
-  offline: boolean;
+  learning: LearningStore;
 }) {
-  const [attempt, setAttempt] = useState(0);
   const subjectId = mode === "official" ? playlist.original : playlist.current;
   const subject = subjects.find((s) => s.id === subjectId)!;
-  const original = subjects.find((s) => s.id === playlist.original)!;
-  const current = subjects.find((s) => s.id === playlist.current)!;
+  const videos = unitVideos(playlist.id);
   const units = officialPlaylists.filter(
     (p) => (mode === "official" ? p.original : p.current) === subjectId,
   );
-  const params = new URLSearchParams({
-    listType: "playlist",
-    list: playlist.id,
-    playsinline: "1",
-    controls: "1",
-    autoplay: "0",
-    rel: "0",
-    hl: "ja",
-    origin: window.location.origin,
-  });
-
   return (
-    <div className="playlist-study">
+    <div className="unit-page">
       <nav className="breadcrumb" aria-label="パンくず">
         <a href={`#/library?subject=${subjectId}&mode=${mode}`}>
           {subject.name}
@@ -50,9 +33,11 @@ export function PlaylistStudy({
       </nav>
       <div className="topic-heading">
         <div>
-          <span className="eyebrow">OFFICIAL LESSONS</span>
+          <span className="eyebrow">LESSON LIBRARY</span>
           <h1 tabIndex={-1}>{playlist.title}</h1>
-          <p>{subject.name}の授業を、ひとつの再生リストで。</p>
+          <p>
+            {subject.name} · {videos.length}本の授業
+          </p>
         </div>
         <a
           className="button secondary"
@@ -62,97 +47,55 @@ export function PlaylistStudy({
           <ArrowRight size={17} />
         </a>
       </div>
-      <div className="playlist-study-layout">
-        <section
-          className="playlist-study-main"
-          aria-label={`${playlist.title}の授業動画`}
-        >
-          <div className="youtube-block">
-            <div className="player-wrapper">
-              <div className="player-frame">
-                <iframe
-                  key={attempt}
-                  src={`https://www.youtube.com/embed?${params}`}
-                  title={`${subject.name} ${playlist.title} — 超わかる！授業動画の公式再生リスト`}
-                  width="960"
-                  height="540"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-            <div className="player-footer playlist-player-footer">
-              <span>YouTube 公式プレーヤー</span>
-              <button
-                className="playlist-reload"
-                onClick={() => setAttempt((a) => a + 1)}
-                disabled={offline}
-                title={
-                  offline
-                    ? "オンラインで再読み込みできます"
-                    : "プレーヤーが表示されないときに再読み込み"
-                }
-              >
-                <RotateCcw size={14} />
-                再読み込み
-              </button>
-            </div>
-          </div>
-          <div className="playlist-study-description">
-            <div className="playlist-source-line">
-              <span className="tag blue">公式再生リスト</span>
-              <span>超わかる！授業動画</span>
-            </div>
-            <p>
-              プレーヤーの「次の動画」や再生リストから、授業を切り替えられます。再生・字幕・速度・全画面の操作もプレーヤー内で行えます。
-            </p>
-            {playlist.original !== playlist.current && (
-              <p className="playlist-classification">
-                公式サイトの分類：{original.name}
-                <span>／</span>現行課程：{current.name}
-              </p>
-            )}
-            <a
-              className="subtle-link"
-              href={`https://www.youtube.com/playlist?list=${playlist.id}`}
-              target="_blank"
-              rel="noopener"
-            >
-              YouTubeで再生リストを開く
-              <ExternalLink size={14} />
-            </a>
-          </div>
-          <section className="playlist-material-note">
-            <BookOpen size={21} />
-            <div>
-              <h2>
-                {playlist.id === QUADRATIC_PLAYLIST
-                  ? "公式・解説・例題と一緒に"
-                  : "この単元の数学教材"}
-              </h2>
-              {playlist.id === QUADRATIC_PLAYLIST ? (
-                <>
-                  <p>二次関数は、Mathveoの独自教材も利用できます。</p>
-                  <div className="playlist-material-links">
-                    {topics.map((t) => (
-                      <a key={t.id} href={`#/material/${t.id}`}>
-                        {t.title}
-                        <ArrowRight size={14} />
-                      </a>
-                    ))}
+      <div className="unit-library-layout">
+        <section aria-label={`${playlist.title}の動画一覧`}>
+          {videos.length ? (
+            <div className="lesson-grid">
+              {videos.map((video, i) => (
+                <a
+                  className="lesson-card"
+                  key={video.id}
+                  href={`#/video/${video.id}?unit=${playlist.id}&mode=${mode}`}
+                >
+                  <div className="lesson-card-image">
+                    <VideoThumbnail video={video} />
+                    <span className="lesson-play">
+                      <Play size={20} fill="currentColor" />
+                    </span>
+                    {learning.get(`video:${video.id}`).playbackEnded && (
+                      <span className="lesson-completed">再生完了</span>
+                    )}
                   </div>
-                </>
-              ) : (
-                <p>
-                  公式・解説・例題は準備中です。授業動画は、この画面で視聴できます。
-                </p>
-              )}
+                  <div className="lesson-card-body">
+                    <span className="lesson-order">
+                      LESSON {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <h2>{video.title}</h2>
+                  </div>
+                </a>
+              ))}
             </div>
-          </section>
-          <p className="playlist-record-note">
-            この再生リスト内の動画ごとの学習記録・再生位置の保存は、まだ対応していません。
-          </p>
+          ) : (
+            <p className="quiet-empty">
+              この単元の動画はまだ登録されていません。
+            </p>
+          )}
+          {playlist.id === QUADRATIC_PLAYLIST && (
+            <section className="playlist-material-note">
+              <BookOpen size={21} />
+              <div>
+                <h2>公式・解説・例題も読む</h2>
+                <div className="playlist-material-links">
+                  {topics.map((t) => (
+                    <a key={t.id} href={`#/material/${t.id}`}>
+                      {t.title}
+                      <ArrowRight size={14} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
         </section>
         <aside className="playlist-unit-guide">
           <span className="eyebrow">SUBJECT GUIDE</span>
@@ -161,7 +104,7 @@ export function PlaylistStudy({
             {units.map((unit, i) => (
               <a
                 key={unit.id}
-                href={`#/playlist/${unit.id}?mode=${mode}`}
+                href={`#/unit/${unit.id}?mode=${mode}`}
                 aria-current={unit.id === playlist.id ? "page" : undefined}
                 className={unit.id === playlist.id ? "active" : ""}
               >
@@ -169,7 +112,7 @@ export function PlaylistStudy({
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span>{unit.title}</span>
-                <Play size={14} />
+                <ChevronRight size={14} />
               </a>
             ))}
           </nav>

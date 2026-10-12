@@ -54,6 +54,8 @@ import {
 } from "./components/LearningControls";
 import { YouTubePlayer } from "./components/YouTubePlayer";
 import { PlaylistStudy } from "./components/PlaylistStudy";
+import { VideoStudy } from "./components/VideoStudy";
+import { unitVideos, registeredInventory } from "./data/video-library";
 import { VideoThumbnail } from "./components/VideoThumbnail";
 
 const navItems = [
@@ -66,7 +68,10 @@ const navItems = [
 function navId(page: string) {
   return page === "material"
     ? "materials"
-    : page === "watch" || page === "playlist"
+    : page === "watch" ||
+        page === "playlist" ||
+        page === "unit" ||
+        page === "video"
       ? "library"
       : page;
 }
@@ -353,14 +358,6 @@ function HomePage({ learning }: { learning: LearningStore }) {
             <span className="tag muted">同期前</span>
           </div>
           <p>チャンネル全体の新着情報はまだ取得していません。</p>
-          <a
-            href={`https://www.youtube.com/channel/UCZUPMvvW1ggn4gbSY741LdA`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            公式チャンネルで新着を見る
-            <ExternalLink size={14} />
-          </a>
         </section>
       </div>
     </>
@@ -471,7 +468,7 @@ function LibraryPage({
           ) : filter !== "all" ? (
             <Empty
               title="条件に合う教材はありません"
-              description="教材の学習状態フィルタを変更してみてください。授業動画は下の再生リストから視聴できます。"
+              description="教材の学習状態フィルタを変更してみてください。授業動画は下の単元から視聴できます。"
             >
               <button
                 className="button secondary small"
@@ -483,28 +480,24 @@ function LibraryPage({
           ) : null}
           <div className="section-heading official-heading">
             <div>
-              <span className="eyebrow">OFFICIAL PLAYLISTS</span>
-              <h2>授業動画の再生リスト</h2>
+              <span className="eyebrow">LESSON LIBRARY</span>
+              <h2>単元別の授業動画</h2>
             </div>
             <span className="tag blue">アプリ内で視聴</span>
           </div>
           <p className="section-description">
-            単元を選ぶと、アプリ内の公式プレーヤーで授業を視聴できます。動画の切り替えもプレーヤー内で行えます。
+            単元を開いて授業を選び、動画ごとに学習できます。
           </p>
           {lists.length ? (
             <div className="playlist-list">
               {lists.map((list, i) => (
-                <a key={list.id} href={`#/playlist/${list.id}?mode=${mode}`}>
+                <a key={list.id} href={`#/unit/${list.id}?mode=${mode}`}>
                   <span className="playlist-number">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <div>
                     <strong>{list.title}</strong>
-                    <span>
-                      {list.original !== list.current && mode === "current"
-                        ? `元の分類：${subjects.find((s) => s.id === list.original)?.name} → 現行：${subjects.find((s) => s.id === list.current)?.name}`
-                        : `公式サイトの分類：${subjects.find((s) => s.id === list.original)?.name}`}
-                    </span>
+                    <span>{unitVideos(list.id).length}本の授業</span>
                   </div>
                   <span className="external-label">
                     視聴する
@@ -519,7 +512,7 @@ function LibraryPage({
               description={
                 subject.id === "C"
                   ? "公式サイトでは旧課程の数学B・Ⅲに分類されています。現行課程へ切り替えると対応先を表示します。"
-                  : "この区分の再生リストは、まだ個別登録していません。公式サイトから確認できます。"
+                  : "この区分の動画は、まだ個別登録していません。公式サイトから確認できます。"
               }
             >
               <a
@@ -746,22 +739,12 @@ function StudyPage({
                 )}
               </div>
               <h2>{video.title}</h2>
-              <p className="video-author">
-                {video.channelTitle}
-                <a
-                  href={`https://www.youtube.com/channel/${video.channelId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  公式チャンネル
-                  <ExternalLink size={13} />
-                </a>
-              </p>
               <details className="video-evidence">
                 <summary>
-                  教材との対応・確認状況
+                  動画・教材の詳細
                   <ChevronRight size={14} />
                 </summary>
+                <p>投稿者：{video.channelTitle}</p>
                 <p>
                   {link?.evidence}{" "}
                   掲載教材はMathveoの独自教材です。動画内の問題や説明を再現したものではありません。
@@ -781,8 +764,8 @@ function StudyPage({
             </div>
             <div className="section-heading">
               <h2>次の学びへ</h2>
-              <a href={`#/playlist/${QUADRATIC_PLAYLIST}`}>
-                公式再生リスト
+              <a href={`#/unit/${QUADRATIC_PLAYLIST}`}>
+                この単元の授業動画
                 <Play size={14} />
               </a>
             </div>
@@ -886,7 +869,7 @@ function SearchPage({
       <PageTitle
         eyebrow="FIND YOUR NEXT STEP"
         title="知りたいことを、すぐに。"
-        description="動画・再生リスト・公式・解説・例題・科目名をまとめて検索します。"
+        description="動画・単元・公式・解説・例題・科目名をまとめて検索します。"
       />
       <form className="search-page-form" onSubmit={search}>
         <Search size={21} />
@@ -920,7 +903,7 @@ function SearchPage({
         <>
           <p className="result-count">
             「{query}」の検索結果：{count}件{" "}
-            <span>登録済みの動画・再生リスト・教材が対象</span>
+            <span>登録済みの動画・単元・教材が対象</span>
           </p>
           {count === 0 && (
             <Empty
@@ -944,14 +927,10 @@ function SearchPage({
               </h2>
               <div className="search-video-list">
                 {results.videos.map((v) => {
-                  const topic =
-                    topics.find((t) =>
-                      topicVideos(t.id).some((l) => l.videoId === v.id),
-                    ) ?? topics[0];
                   return (
                     <a
                       className="search-video"
-                      href={`#/watch/${topic.id}?video=${v.id}`}
+                      href={`#/video/${v.id}`}
                       key={v.id}
                     >
                       <VideoThumbnail video={v} className="search-thumbnail" />
@@ -971,11 +950,11 @@ function SearchPage({
           {results.playlists.length > 0 && (
             <section className="search-result-section">
               <h2>
-                単元の再生リスト<span>{results.playlists.length}</span>
+                単元の単元<span>{results.playlists.length}</span>
               </h2>
               <div className="playlist-list">
                 {results.playlists.map((list, i) => (
-                  <a key={list.id} href={`#/playlist/${list.id}`}>
+                  <a key={list.id} href={`#/unit/${list.id}`}>
                     <span className="playlist-number">
                       {String(i + 1).padStart(2, "0")}
                     </span>
@@ -1173,10 +1152,11 @@ function AboutPage({ learning }: { learning: LearningStore }) {
         <section>
           <h2>現在利用できるもの</h2>
           <p>
-            数学Ⅰ「二次関数」の3テーマ、独自の公式・解説・例題、公式YouTubeでタイトル・投稿者を確認した3本の動画を利用できます。サンプルの架空動画は使用していません。
+            数学Ⅰ「二次関数」の3テーマ、独自の公式・解説・例題、公式YouTubeで確認した授業動画を利用できます。サンプルの架空動画は使用していません。
           </p>
           <p>
-            公式サイト掲載の高校数学33件・中学数学12件の再生リストを、科目・単元ごとにアプリ内で開けます。動画の個別一覧・チャンネル全体の公開動画・新着・Shorts・ライブの一括収録はまだ行っていません。全数学動画の総数は未確定です。
+            公式サイト掲載の45単元から、{registeredInventory.videos.length}
+            本の動画を個別登録しました。科目・単元・各授業の順に選び、アプリ内で視聴できます。全チャンネルの公開動画・新着・Shorts・ライブの網羅性と、全数学動画の総数は未確定です。
           </p>
         </section>
         <section>
@@ -1212,7 +1192,7 @@ function AboutPage({ learning }: { learning: LearningStore }) {
             学習記録をJSONで書き出す
           </button>
           <p>
-            YouTubeのサムネイルを表示し、再生操作や再生リストの視聴画面を開くと公式プレーヤーへ接続します。接続先には動画・再生リストのIDやIPアドレスなどの情報が伝わります。
+            YouTubeのサムネイルを表示し、再生操作や動画の視聴画面を開くと公式プレーヤーへ接続します。接続先には動画IDやIPアドレスなどの情報が伝わります。
           </p>
           <div className="about-links">
             <a
@@ -1272,8 +1252,12 @@ export function App() {
   const activeNav = navId(route.page);
   const topic = getTopic(route.id);
   const playlist = officialPlaylists.find((p) => p.id === route.id);
+  const selectedVideo = videos.find((v) => v.id === route.id);
   const topTitle =
-    route.page === "watch" || route.page === "playlist"
+    route.page === "watch" ||
+    route.page === "playlist" ||
+    route.page === "unit" ||
+    route.page === "video"
       ? "授業動画"
       : route.page === "material" || route.page === "materials"
         ? "数学教材"
@@ -1289,13 +1273,23 @@ export function App() {
     page = <LibraryPage route={route} learning={learning} />;
   else if (route.page === "materials")
     page = <MaterialsPage learning={learning} />;
-  else if (route.page === "playlist" && playlist)
+  else if ((route.page === "playlist" || route.page === "unit") && playlist)
     page = (
       <PlaylistStudy
         key={playlist.id}
         playlist={playlist}
         mode={route.query.get("mode") === "official" ? "official" : "current"}
-        offline={offline}
+        learning={learning}
+      />
+    );
+  else if (route.page === "video" && selectedVideo)
+    page = (
+      <VideoStudy
+        key={selectedVideo.id}
+        video={selectedVideo}
+        unitId={route.query.get("unit") ?? ""}
+        mode={route.query.get("mode") === "official" ? "official" : "current"}
+        learning={learning}
       />
     );
   else if ((route.page === "watch" || route.page === "material") && topic)
@@ -1476,7 +1470,10 @@ export function App() {
           id="main-content"
           tabIndex={-1}
           className={
-            route.page === "watch" || route.page === "playlist"
+            route.page === "watch" ||
+            route.page === "playlist" ||
+            route.page === "unit" ||
+            route.page === "video"
               ? "main-content wide"
               : "main-content"
           }

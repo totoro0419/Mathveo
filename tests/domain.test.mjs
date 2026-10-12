@@ -14,11 +14,13 @@ const server = await createServer({
   server: { middlewareMode: true },
   appType: "custom",
 });
-const { topics, videos, videoTopicLinks, subjects } = await server.ssrLoadModule(
-  "/src/data/catalog.ts",
-);
+const { topics, videos, videoTopicLinks, subjects } =
+  await server.ssrLoadModule("/src/data/catalog.ts");
 const { officialPlaylists } = await server.ssrLoadModule(
   "/src/data/playlists.ts",
+);
+const { unitVideos, registeredInventory } = await server.ssrLoadModule(
+  "/src/data/video-library.ts",
 );
 const { searchCatalog, normalizeSearch } = await server.ssrLoadModule(
   "/src/domain/search.ts",
@@ -103,11 +105,41 @@ test("old subject metadata stays available alongside the current vector mapping"
 });
 test("manual video metadata does not fabricate durations, descriptions or permission", () => {
   for (const video of videos) {
-    assert.equal(video.source, "manual-oembed");
+    assert.ok(
+      ["manual-oembed", "youtube-oembed", "youtube-iframe-api"].includes(
+        video.source,
+      ),
+    );
     assert.equal(video.description, null);
     assert.equal(video.durationSeconds, null);
     assert.equal(video.embeddable, null);
   }
+});
+
+test("every imported unit resolves all individual videos, including later lessons", () => {
+  assert.equal(registeredInventory.units.length, 45);
+  assert.equal(registeredInventory.videos.length, 1022);
+  const ids = new Set(registeredInventory.videos.map((v) => v.id));
+  assert.equal(ids.size, registeredInventory.videos.length);
+  for (const unit of registeredInventory.units) {
+    assert.ok(officialPlaylists.some((p) => p.id === unit.id));
+    assert.ok(unit.videoIds.length > 1, "a unit must expose later lessons");
+    const lessons = unitVideos(unit.id);
+    assert.deepEqual(
+      lessons.map((v) => v.id),
+      unit.videoIds,
+    );
+    for (const video of lessons) {
+      assert.match(video.id, /^[A-Za-z0-9_-]{11}$/);
+      assert.ok(video.playlistIds.includes(unit.id));
+      assert.ok(video.title.trim());
+    }
+  }
+  const trig = officialPlaylists.find(
+    (p) => p.current === "II" && p.title === "三角関数",
+  );
+  const later = unitVideos(trig.id)[1];
+  assert.ok(searchCatalog(later.title).videos.some((v) => v.id === later.id));
 });
 
 await server.close();

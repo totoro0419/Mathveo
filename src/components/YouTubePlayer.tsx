@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { ExternalLink, Play, RotateCcw, WifiOff } from "lucide-react";
+import { Play, RotateCcw, WifiOff } from "lucide-react";
 import type { LearningStore } from "../hooks/useLearning";
 import type { VideoRecord } from "../domain/types";
 import { VideoThumbnail } from "./VideoThumbnail";
@@ -58,13 +58,15 @@ function loadPlayerApi(): Promise<YoutubeApi> {
 export function YouTubePlayer({
   video,
   learning,
+  autoLoad = false,
 }: {
   video: VideoRecord;
   learning: LearningStore;
+  autoLoad?: boolean;
 }) {
   const id = useId();
   const container = useRef<HTMLDivElement>(null);
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(autoLoad);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
   );
@@ -134,7 +136,7 @@ export function YouTubePlayer({
         readinessTimer = setTimeout(() => {
           if (!disposed) {
             setError(
-              "YouTubeプレーヤーに接続できませんでした。接続を確認するかYouTubeで視聴してください。",
+              "YouTubeプレーヤーに接続できませんでした。接続を確認して再試行してください。",
             );
             setState("error");
           }
@@ -180,9 +182,9 @@ export function YouTubePlayer({
               if (readinessTimer) clearTimeout(readinessTimer);
               setError(
                 event.data === 101 || event.data === 150
-                  ? "この動画は外部サイトでの再生が許可されていません。YouTubeで視聴してください。"
+                  ? "この動画は埋め込み再生が許可されていません。別の授業を選んでください。"
                   : event.data === 153
-                    ? "YouTubeが再生元を確認できませんでした。YouTubeで視聴するか再試行してください。"
+                    ? "YouTubeが再生元を確認できませんでした。再試行してください。"
                     : "YouTubeで動画を再生できませんでした。動画の公開状態や接続を確認してください。",
               );
               setState("error");
@@ -232,7 +234,7 @@ export function YouTubePlayer({
               <Play size={24} fill="currentColor" />
             </span>
             <span>
-              {offline ? "接続してから再生" : "YouTubeで授業を見る"}
+              {offline ? "接続してから再生" : "授業動画を読み込む"}
               <small>
                 {record.position > 0 && !record.playbackEnded
                   ? `${Math.floor(record.position / 60)}:${String(record.position % 60).padStart(2, "0")} から再開`
@@ -270,17 +272,6 @@ export function YouTubePlayer({
           </button>
         </div>
       )}
-      <div className="player-footer">
-        <span>YouTube 公式プレーヤー</span>
-        <a
-          href={`https://www.youtube.com/watch?v=${video.id}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          YouTubeで開く
-          <ExternalLink size={14} />
-        </a>
-      </div>
     </div>
   );
 }
