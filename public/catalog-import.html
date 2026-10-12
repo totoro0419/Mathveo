@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Mathveo 動画登録用の確認</title>
+<style>
+body{font:15px/1.7 system-ui,sans-serif;background:#f8faff;color:#14274a;max-width:1040px;margin:30px auto;padding:0 24px}h1{font-size:25px}button{background:#2563eb;color:white;border:0;border-radius:10px;padding:13px 22px;font:inherit;cursor:pointer}button:disabled{opacity:.5}#player{aspect-ratio:16/9;min-height:200px;background:#fff;margin-top:20px}iframe{width:100%;height:100%;border:0}textarea{display:block;box-sizing:border-box;width:100%;min-height:260px;margin-top:20px;padding:15px;font:12px/1.5 monospace;border:1px solid #dce5f2;border-radius:10px}#status{min-height:30px}
+</style>
+<h1>Mathveo · 動画IDの収録</h1>
+<p>公式IFrame Player APIのgetPlaylist()を使用します。動画の再生・ダウンロードは行いません。取得結果は動画一覧の登録に使います。</p>
+<button id="start">45単元の動画IDを取得する</button>
+<p id="status" role="status">未取得</p>
+<div id="player"></div>
+<label for="inventory">取得した動画ID（公式の並び順）</label>
+<textarea id="inventory" readonly>{"playlists":[],"failures":[]}</textarea>
+<script>
+const lists = [{"title": "展開・因数分解", "id": "PLd3yb0oVJ_W0K8HPAu_zGhqx2sxBlWlsh"}, {"title": "実数・１次不等式", "id": "PLd3yb0oVJ_W1mWi71CylQfLvBMqkSpC6J"}, {"title": "２次関数", "id": "PLd3yb0oVJ_W20PQYfg3gGxtu6HJ4IaZ8W"}, {"title": "２次方程式", "id": "PLd3yb0oVJ_W0QIalPhlz1OvQVwPgOuvEi"}, {"title": "２次不等式", "id": "PLd3yb0oVJ_W3s4owumbTboRGsqd5Ak1nZ"}, {"title": "三角比", "id": "PLd3yb0oVJ_W2d3q5U_EYtM-8o68yP7iKu"}, {"title": "データの分析", "id": "PLd3yb0oVJ_W2xWQ1DOni8yi8ng3em2kB4"}, {"title": "論理と集合", "id": "PLd3yb0oVJ_W0LQmAMqapIBjLPjwZighkN"}, {"title": "場合の数", "id": "PLd3yb0oVJ_W1wWsVpcQvuHwEea1SeVO_s"}, {"title": "確率", "id": "PLd3yb0oVJ_W0XSqWb94WjPAyVhMKnOe4M"}, {"title": "図形の性質", "id": "PLd3yb0oVJ_W1XS6pJuqEiY-qgWqTQ67RW"}, {"title": "整数の性質", "id": "PLd3yb0oVJ_W0T_e62uPntx5TtIIbNJfxn"}, {"title": "74分で「数ⅠＡ」を総復習", "id": "PLd3yb0oVJ_W00shAyKb-ltwNRrBYwhf_0"}, {"title": "式と証明", "id": "PLDaIUKhKMpbjOgpMWW45wbiG1PvH6RzBS"}, {"title": "複素数と方程式", "id": "PLDaIUKhKMpbhAlTMsrcGR9MOiuJIMWGkE"}, {"title": "図形と方程式", "id": "PLDaIUKhKMpbhAzyefODex5k2NmkbTKZRx"}, {"title": "三角関数", "id": "PLDaIUKhKMpbh6kWK9Gryo9oT7tb8AZGa-"}, {"title": "指数・対数関数", "id": "PLDaIUKhKMpbh0EvBxzfuIkhzCNjenQjO9"}, {"title": "微分法", "id": "PLDaIUKhKMpbh9W3hjHsEfUj_bWq-NRs9R"}, {"title": "積分法", "id": "PLDaIUKhKMpbjcBMsoi5VBbY6QYGC3HDbi"}, {"title": "数列", "id": "PLDaIUKhKMpbg8k3JqpwttTPX7saFqSM_Y"}, {"title": "ベクトル", "id": "PLDaIUKhKMpbjah65_stEDki3c0tzYlqf3"}, {"title": "96分で「数ⅡB」を総復習", "id": "PLDaIUKhKMpbgF36oR_ICR_fQgxMqoA2vm"}, {"title": "複素数平面", "id": "PLDnhF1CbeSZkhB-sIjfu2DlckVDDtiihw"}, {"title": "式と曲線", "id": "PLDnhF1CbeSZmbfzhKY1xtrN4E3EymHJMA"}, {"title": "関数", "id": "PLDnhF1CbeSZlkUOUQWFVTxqSEOpn-x7BM"}, {"title": "数列の極限", "id": "PLDnhF1CbeSZm0-Z3CstLh2rJ7X648sDMU"}, {"title": "関数の極限", "id": "PLDnhF1CbeSZmOR2SPkxdpRMHZ2lYAzIS0"}, {"title": "微分法", "id": "PLDnhF1CbeSZnm3ZnxxgOpHksaiUZJvYlk"}, {"title": "微分法の応用", "id": "PLDnhF1CbeSZl3LdT8wJRFbtNKpvJdjOJ-"}, {"title": "積分法", "id": "PLDnhF1CbeSZlJ8DBtSXteotGV0RK9vXQZ"}, {"title": "積分法の応用", "id": "PLDnhF1CbeSZk_vaEz9kWFi2zSf2LLlc6Z"}, {"title": "83分で「数Ⅲ」を総復習", "id": "PLDnhF1CbeSZnyFqKkOVk7d-YSrGt1W3ZB"}, {"title": "正の数と負の数", "id": "PLd3yb0oVJ_W1lbH6t_sSOgj1m9Q_k8ToO"}, {"title": "文字式", "id": "PLd3yb0oVJ_W001tBLpPwmz5o-j-aQxMi_"}, {"title": "方程式", "id": "PLd3yb0oVJ_W1i2Zk4UZPIeCkFog4AD_lu"}, {"title": "比例と反比例", "id": "PLd3yb0oVJ_W3ngPhwihHiMRqHttGfWgYL"}, {"title": "連立方程式", "id": "PLd3yb0oVJ_W3xBnzqwTb_v2aa4-J7BXYD"}, {"title": "１次関数", "id": "PLd3yb0oVJ_W0ayF00BjsYhKIHBvHi1i6E"}, {"title": "平方根", "id": "PLd3yb0oVJ_W3luQIIpZ_qybx3H3cixj_n"}, {"title": "因数分解", "id": "PLd3yb0oVJ_W3WP_EGWUW9tpFYihHCzsG_"}, {"title": "２次方程式", "id": "PLd3yb0oVJ_W110wUdm4SMF-_efjjVR-wq"}, {"title": "y=ax²（２次関数）", "id": "PLd3yb0oVJ_W2LqaobfyqJlUW8SEhdRMpE"}, {"title": "平面図形", "id": "PLd3yb0oVJ_W2v7lXMRr7rRKLvgrOCAq5s"}, {"title": "空間図形", "id": "PLd3yb0oVJ_W37E66EPxR9XGnrQ3mgw-g2"}];
+const output = {source:'youtube-iframe-api-getPlaylist',fetchedAt:null,playlists:[],failures:[]};
+const status = document.querySelector('#status');
+const result = document.querySelector('#inventory');
+let currentPlayer;
+function display(){result.value=JSON.stringify(output,null,2);}
+function collect(unit){return new Promise(resolve=>{
+  const host=document.querySelector('#player');
+  const frame=document.createElement('iframe');
+  frame.title=unit.title+'の公式授業プレーヤー';
+  frame.referrerPolicy='strict-origin-when-cross-origin';
+  frame.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';
+  frame.allowFullscreen=true;
+  const params=new URLSearchParams({listType:'playlist',list:unit.id,enablejsapi:'1',autoplay:'0',controls:'1',playsinline:'1',origin:location.origin});
+  frame.src='https://www.youtube.com/embed?'+params;
+  host.replaceChildren(frame);
+  let done=false, previous='', stable=0, latest=[], poll;
+  const finish=()=>{if(done)return;done=true;clearTimeout(timeout);clearInterval(poll);if(latest.length)output.playlists.push({id:unit.id,title:unit.title,videoIds:latest,fetchedAt:new Date().toISOString()});else output.failures.push({id:unit.id,title:unit.title,reason:'公式プレーヤーから動画IDを確認できませんでした。'});display();currentPlayer?.destroy();resolve();};
+  const read=()=>{try{const ids=currentPlayer.getPlaylist();if(!Array.isArray(ids)||!ids.length)return;latest=ids.filter(id=>/^[A-Za-z0-9_-]{11}$/.test(id));const key=latest.join(',');stable=key===previous?stable+1:0;previous=key;if(stable>=3)finish();}catch{}};
+  const timeout=setTimeout(finish,18000);
+  currentPlayer=new YT.Player(frame,{events:{onReady:()=>{read();poll=setInterval(read,400);},onStateChange:read}});
+});}
+window.onYouTubeIframeAPIReady=()=>document.querySelector('#start').disabled=false;
+document.querySelector('#start').disabled=true;
+document.querySelector('#start').onclick=async()=>{
+  document.querySelector('#start').disabled=true;output.fetchedAt=new Date().toISOString();
+  for(let i=0;i<lists.length;i++){status.textContent=(i+1)+' / '+lists.length+' · '+lists[i].title+'の動画IDを確認中';await collect(lists[i]);if(output.failures.length>=3){status.textContent='取得できない単元が続いたため停止しました。取得結果を確認してください。';return;}}
+  status.textContent='取得完了 · '+output.playlists.length+'単元 / '+output.playlists.reduce((n,p)=>n+p.videoIds.length,0)+'件（単元間の重複を含む）';
+};
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</html>
