@@ -56,7 +56,7 @@ import { YouTubePlayer } from "./components/YouTubePlayer";
 import { PlaylistStudy } from "./components/PlaylistStudy";
 import { VideoStudy } from "./components/VideoStudy";
 import { unitVideos, registeredInventory } from "./data/video-library";
-import { VideoThumbnail } from "./components/VideoThumbnail";
+import { videoPresentation } from "./domain/video-title";
 
 const navItems = [
   { id: "home", label: "ホーム", icon: HomeIcon, href: "#/home" },
@@ -131,7 +131,6 @@ function TopicRows({
     <div className={`topic-rows ${compact ? "compact" : ""}`}>
       {list.map((topic) => {
         const record = learning.get(`topic:${topic.id}`);
-        const video = topicVideos(topic.id)[0]?.video;
         return (
           <a href={`#/watch/${topic.id}`} className="topic-row" key={topic.id}>
             <span
@@ -143,9 +142,6 @@ function TopicRows({
                 String(topic.order).padStart(2, "0")
               )}
             </span>
-            {!compact && video && (
-              <VideoThumbnail className="topic-thumbnail" video={video} />
-            )}
             <div className="topic-row-text">
               <span className="topic-meta">
                 数学Ⅰ<span>／</span>二次関数
@@ -738,12 +734,13 @@ function StudyPage({
                   <span className="tag blue">再生完了</span>
                 )}
               </div>
-              <h2>{video.title}</h2>
+              <h2>{videoPresentation(video).title}</h2>
               <details className="video-evidence">
                 <summary>
                   動画・教材の詳細
                   <ChevronRight size={14} />
                 </summary>
+                <p>元のタイトル：{video.title}</p>
                 <p>投稿者：{video.channelTitle}</p>
                 <p>
                   {link?.evidence}{" "}
@@ -933,12 +930,17 @@ function SearchPage({
                       href={`#/video/${v.id}`}
                       key={v.id}
                     >
-                      <VideoThumbnail video={v} className="search-thumbnail" />
                       <div>
                         <span className="topic-meta">
-                          YouTube · {v.channelTitle}
+                          {v.currentSubjects
+                            .map(
+                              (id) => subjects.find((s) => s.id === id)?.name,
+                            )
+                            .join("・")}
+                          {videoPresentation(v).kind &&
+                            ` · ${videoPresentation(v).kind}`}
                         </span>
-                        <h3>{v.title}</h3>
+                        <h3>{videoPresentation(v).title}</h3>
                       </div>
                       <Play size={19} />
                     </a>

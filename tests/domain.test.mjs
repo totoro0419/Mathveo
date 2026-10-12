@@ -22,6 +22,8 @@ const { officialPlaylists } = await server.ssrLoadModule(
 const { unitVideos, registeredInventory } = await server.ssrLoadModule(
   "/src/data/video-library.ts",
 );
+const { videoPresentation, lessonPresentations, lessonLabel } =
+  await server.ssrLoadModule("/src/domain/video-title.ts");
 const { searchCatalog, normalizeSearch } = await server.ssrLoadModule(
   "/src/domain/search.ts",
 );
@@ -140,6 +142,33 @@ test("every imported unit resolves all individual videos, including later lesson
   );
   const later = unitVideos(trig.id)[1];
   assert.ok(searchCatalog(later.title).videos.some((v) => v.id === later.id));
+});
+
+test("editorial titles keep the source and distinguish lessons without guessing", () => {
+  const title =
+    "【慶応大】平方完成【超わかる！高校数学Ⅰ・A】～演習～２次関数＃６";
+  const video = { id: "P84CrKaIob0", title };
+  assert.equal(videoPresentation(video).title, "平方完成（慶応大）");
+  assert.equal(videoPresentation(video).kind, "演習");
+  assert.equal(video.title, title);
+  const duplicate = [
+    { id: "first", title: "二項定理【高校数学】式と証明＃１" },
+    { id: "second", title: "二項定理【高校数学】式と証明＃２" },
+  ];
+  const labels = lessonPresentations(duplicate);
+  assert.equal(labels[0].kind, null);
+  assert.equal(lessonLabel(labels[0]), "その1");
+  assert.equal(lessonLabel(labels[1]), "その2");
+  const power = {
+    id: "power",
+    title: "xⁿの導関数の公式【高校数学】微分法＃３",
+  };
+  assert.equal(videoPresentation(power).title, "xⁿの導関数の公式");
+  for (const video of videos) {
+    const label = videoPresentation(video);
+    assert.ok(label.title.trim());
+    assert.ok(!label.title.includes("超わかる！"));
+  }
 });
 
 await server.close();

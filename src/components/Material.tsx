@@ -1,4 +1,4 @@
-import { VideoThumbnail } from "./VideoThumbnail";
+import { videoPresentation } from "../domain/video-title";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -214,12 +214,11 @@ export function RelatedSection({ topic }: { topic: Topic }) {
           className="related-video"
           href={`#/watch/${topic.id}?video=${video.id}`}
         >
-          <VideoThumbnail video={video} className="related-thumbnail" />
           <div>
             <span className={`tag ${relation === "candidate" ? "muted" : ""}`}>
               {relation === "candidate" ? "推定候補・要確認" : "関連教材"}
             </span>
-            <h3>{video.title}</h3>
+            <h3>{videoPresentation(video).title}</h3>
             <p>{evidence}</p>
             <span className="related-author">
               YouTube · {video.channelTitle}

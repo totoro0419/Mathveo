@@ -1,5 +1,6 @@
 import { topics, videos, subjects } from "../data/catalog";
 import { officialPlaylists } from "../data/playlists";
+import { videoPresentation } from "./video-title";
 
 export function normalizeSearch(value: string) {
   return value
@@ -50,6 +51,7 @@ export function searchCatalog(query: string) {
       matches(
         [
           v.title,
+          videoPresentation(v).title,
           v.description ?? "",
           ...v.currentSubjects.map(
             (id) => subjects.find((s) => s.id === id)?.name ?? "",

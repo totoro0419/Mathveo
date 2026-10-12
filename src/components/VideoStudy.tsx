@@ -12,6 +12,7 @@ import { subjects, topics, videoTopicLinks } from "../data/catalog";
 import { unitVideos } from "../data/video-library";
 import type { LearningStore } from "../hooks/useLearning";
 import { YouTubePlayer } from "./YouTubePlayer";
+import { lessonPresentations, lessonLabel } from "../domain/video-title";
 
 export function VideoStudy({
   video,
@@ -36,6 +37,8 @@ export function VideoStudy({
   const subject = subjects.find((s) => s.id === subjectId)!;
   const lessons = unit ? unitVideos(unit.id) : [video];
   const index = lessons.findIndex((v) => v.id === video.id);
+  const presentations = lessonPresentations(lessons);
+  const currentTitle = presentations[index];
   const record = learning.get(`video:${video.id}`);
   const links = videoTopicLinks.filter((l) => l.videoId === video.id);
   const href = (id: string) =>
@@ -63,8 +66,9 @@ export function VideoStudy({
             <span className="lesson-order">
               LESSON {String(index + 1).padStart(2, "0")}
               {unit && ` / ${lessons.length}`}
+              {lessonLabel(currentTitle) && ` · ${lessonLabel(currentTitle)}`}
             </span>
-            <h1 tabIndex={-1}>{video.title}</h1>
+            <h1 tabIndex={-1}>{currentTitle.title}</h1>
           </div>
           <div className="lesson-actions">
             <div className="lesson-step-controls">
@@ -126,6 +130,7 @@ export function VideoStudy({
               動画の詳細
               <ChevronRight size={14} />
             </summary>
+            <p>元のタイトル：{video.title}</p>
             <p>投稿者：{video.channelTitle}</p>
             <p>動画ID：{video.id}</p>
             <p>
@@ -177,7 +182,12 @@ export function VideoStudy({
                 <span className="playlist-number">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <span>{lesson.title}</span>
+                <span className="lesson-queue-copy">
+                  <span>{presentations[i].title}</span>
+                  {lessonLabel(presentations[i]) && (
+                    <small>{lessonLabel(presentations[i])}</small>
+                  )}
+                </span>
                 {lesson.id === video.id ? (
                   <Play size={14} />
                 ) : (

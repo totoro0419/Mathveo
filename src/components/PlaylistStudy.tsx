@@ -1,9 +1,15 @@
-import { ArrowRight, BookOpen, ChevronRight, Play } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  Play,
+} from "lucide-react";
 import { officialPlaylists } from "../data/playlists";
 import type { OfficialPlaylist } from "../data/playlists";
 import { subjects, QUADRATIC_PLAYLIST, topics } from "../data/catalog";
 import { unitVideos } from "../data/video-library";
-import { VideoThumbnail } from "./VideoThumbnail";
+import { lessonPresentations, lessonLabel } from "../domain/video-title";
 import type { LearningStore } from "../hooks/useLearning";
 
 /** Legacy playlist URLs resolve to the unit's individually registered videos. */
@@ -19,6 +25,7 @@ export function PlaylistStudy({
   const subjectId = mode === "official" ? playlist.original : playlist.current;
   const subject = subjects.find((s) => s.id === subjectId)!;
   const videos = unitVideos(playlist.id);
+  const presentations = lessonPresentations(videos);
   const units = officialPlaylists.filter(
     (p) => (mode === "official" ? p.original : p.current) === subjectId,
   );
@@ -50,31 +57,45 @@ export function PlaylistStudy({
       <div className="unit-library-layout">
         <section aria-label={`${playlist.title}の動画一覧`}>
           {videos.length ? (
-            <div className="lesson-grid">
-              {videos.map((video, i) => (
-                <a
-                  className="lesson-card"
-                  key={video.id}
-                  href={`#/video/${video.id}?unit=${playlist.id}&mode=${mode}`}
-                >
-                  <div className="lesson-card-image">
-                    <VideoThumbnail video={video} />
-                    <span className="lesson-play">
-                      <Play size={20} fill="currentColor" />
-                    </span>
-                    {learning.get(`video:${video.id}`).playbackEnded && (
-                      <span className="lesson-completed">再生完了</span>
-                    )}
-                  </div>
-                  <div className="lesson-card-body">
-                    <span className="lesson-order">
-                      LESSON {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <h2>{video.title}</h2>
-                  </div>
-                </a>
-              ))}
-            </div>
+            <ol className="lesson-list">
+              {videos.map((video, i) => {
+                const record = learning.get(`video:${video.id}`);
+                const state =
+                  record.status === "completed"
+                    ? "学習済み"
+                    : record.playbackEnded
+                      ? "再生完了"
+                      : "";
+                const label = lessonLabel(presentations[i]);
+                return (
+                  <li key={video.id}>
+                    <a
+                      className="lesson-list-row"
+                      href={`#/video/${video.id}?unit=${playlist.id}&mode=${mode}`}
+                    >
+                      <span className="lesson-row-number">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="lesson-row-copy">
+                        <strong>{presentations[i].title}</strong>
+                        {(label || state) && (
+                          <span className="lesson-row-meta">
+                            {label && <span>{label}</span>}
+                            {state && (
+                              <span className="lesson-row-state">
+                                <CheckCircle2 size={13} />
+                                {state}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </span>
+                      <Play size={16} className="lesson-row-play" />
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
           ) : (
             <p className="quiet-empty">
               この単元の動画はまだ登録されていません。

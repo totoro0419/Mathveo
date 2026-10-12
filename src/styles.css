@@ -2035,80 +2035,72 @@ main:focus {
 .individual-video-main {
   min-width: 0;
 }
-.lesson-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px 18px;
-}
-.lesson-card {
-  display: block;
-  overflow: hidden;
+.lesson-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: white;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: white;
-  transition:
-    border-color 0.18s,
-    box-shadow 0.18s;
-}
-.lesson-card:hover {
-  border-color: #b6cdf5;
-  box-shadow: 0 5px 18px #14274a0b;
-}
-.lesson-card-image {
-  position: relative;
-  aspect-ratio: 16/9;
   overflow: hidden;
-  background: var(--surface);
 }
-.lesson-card-image > img,
-.lesson-card-image > .thumbnail-fallback {
+.lesson-list > li + li {
+  border-top: 1px solid #eaf0f8;
+}
+.lesson-list-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 18px;
+  gap: 18px;
+  align-items: center;
+  min-height: 74px;
+  padding: 16px 22px;
+  transition: background 0.16s;
+}
+.lesson-list-row:hover {
+  background: #f5f8ff;
+}
+.lesson-row-number {
+  color: #88a0bf;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+.lesson-row-copy {
+  min-width: 0;
+}
+.lesson-row-copy > strong {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  color: var(--navy);
+  font-size: 0.94rem;
+  font-weight: 550;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
 }
-.lesson-play {
+.lesson-row-meta {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: absolute;
-  inset: 0;
-  color: white;
-  opacity: 0;
-  background: #14274a35;
-  transition: opacity 0.18s;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+  color: #7890ae;
+  font-size: 0.69rem;
 }
-.lesson-card:hover .lesson-play,
-.lesson-card:focus-visible .lesson-play {
-  opacity: 1;
+.lesson-row-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #4b79bc;
 }
-.lesson-completed {
-  position: absolute;
-  bottom: 9px;
-  right: 9px;
-  background: white;
+.lesson-row-play {
+  color: #7c9ecb;
+}
+.lesson-list-row:hover .lesson-row-play {
   color: var(--primary);
-  border-radius: 5px;
-  font-size: 0.65rem;
-  padding: 4px 7px;
-}
-.lesson-card-body {
-  padding: 15px 16px 18px;
 }
 .lesson-order {
   color: #7890ae;
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.1em;
-}
-.lesson-card h2 {
-  font-size: 0.84rem;
-  line-height: 1.7;
-  margin-top: 7px;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
 }
 .individual-video-layout {
   display: grid;
@@ -2214,11 +2206,19 @@ main:focus {
   line-height: 1.65;
   border-bottom: 1px solid #eef2f8;
 }
-.lesson-queue nav a > span:nth-child(2) {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
+.lesson-queue-copy {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lesson-queue-copy > span {
+  display: block;
+}
+.lesson-queue-copy small {
+  display: block;
+  color: #8296b1;
+  font-size: 0.65rem;
+  margin-top: 4px;
 }
 .lesson-queue nav a:hover {
   background: #f5f8ff;
@@ -2240,9 +2240,6 @@ main:focus {
   font-size: 0.74rem;
 }
 @media (max-width: 1200px) {
-  .lesson-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .unit-library-layout {
     grid-template-columns: minmax(0, 1fr) 220px;
   }
@@ -2262,20 +2259,16 @@ main:focus {
   .lesson-queue nav {
     max-height: 460px;
   }
-  .lesson-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 @media (max-width: 680px) {
-  .lesson-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 15px 12px;
+  .lesson-list-row {
+    grid-template-columns: 27px minmax(0, 1fr) 16px;
+    gap: 12px;
+    min-height: 72px;
+    padding: 15px 17px;
   }
-  .lesson-card-body {
-    padding: 12px;
-  }
-  .lesson-card h2 {
-    font-size: 0.75rem;
+  .lesson-row-copy > strong {
+    font-size: 0.9rem;
   }
   .individual-video-layout {
     margin-top: 18px;
@@ -2291,11 +2284,6 @@ main:focus {
   }
   .lesson-actions {
     align-items: flex-start;
-  }
-}
-@media (max-width: 370px) {
-  .lesson-grid {
-    grid-template-columns: 1fr;
   }
 }
 .playlist-study-main {
