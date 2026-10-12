@@ -27,6 +27,13 @@ jobs:
         run: npm ci
       - name: Verify app
         run: npm run check
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install SVG renderer
+        run: python -m pip install "CairoSVG==2.7.1"
+      - name: Render updated PWA icons
+        run: python scripts/render-icons.py
       - name: Build static app
         run: npm run build
       - name: Upload Pages artifact

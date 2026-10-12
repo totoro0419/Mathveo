@@ -1,0 +1,41 @@
+name: Refresh Mathveo icon assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - public/icon.svg
+      - scripts/render-icons.py
+      - .github/workflows/brand-icons.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mathveo-icon-assets
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deterministic SVG renderer
+        run: python -m pip install "CairoSVG==2.7.1"
+      - name: Render PWA icons
+        run: python scripts/render-icons.py
+      - name: Commit updated PNG assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/icon-192.png public/icon-512.png
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: regenerate Mathveo PWA icon sizes"
+            git push origin HEAD:main
+          fi
