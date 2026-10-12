@@ -2,6 +2,27 @@
 
 2026-10-11 UTC（日本時間2026-10-12）。M01の主要4画面と代表単元の実装を提出します。以下は実装したことと確認できたことを分けた記録です。動画の実再生に未確認事項があるため、M01の全合格基準を無条件に満たしたという宣言はしません。
 
+## 2026-10-12：Mathveoの動画操作バー
+
+公式YouTube埋め込みの`controls=0`を使い、標準の操作バーを非表示にしました。映像の外側にMathveoの再生・一時停止、10秒移動、シーク、対応速度の選択、2倍速、音量・ミュート、全画面ボタンを実装しています。iframeの上に操作部品や隠すための要素は配置していません。
+
+速度の選択肢はIFrame Player APIの`getAvailablePlaybackRates()`から取得し、選択中の速度は`getPlaybackRate()`と変更イベントで確認します。2倍速ボタンを押しただけで変更成功と表示することはありません。再生位置などの既存の保存処理を維持し、操作状態の更新ではiframeを作り直しません。
+
+コミット`f7610e5618e96cff7f0ae7b1c3e6380e641aad1c`の[公開用Actions](https://github.com/totoro0419/Mathveo/actions/runs/38211464510)と[検証用Actions](https://github.com/totoro0419/Mathveo/actions/runs/38211464260)は成功しました。ローカルの型チェック、既存の11件の検査、ビルドも通過しました。
+
+公開Chromeで確認したこと：
+
+- 二次関数の個別動画に`controls=0`、正しいVideo ID、origin、referrer policyを設定。2倍速ボタンから表示が2×になり、公式iframe内のHTML videoの`playbackRate`も2になりました。次の授業へ移動した後も、対応する個別動画に2倍速を設定できました。
+- 音量スライダーを矢印キーで100から99へ変更。ミュート操作後はAPI由来の状態を保持し、公式iframe内のHTML videoの`muted`もtrueでした。再生・一時停止の命令と操作ボタンの状態変化を確認しました。
+- PCの本文幅／スクロール幅は1348/1348px。390px相当では375/375px、プレーヤー幅333px、操作ボタンは44×44pxで2行に配置。820px相当では805/805px、プレーヤー幅673pxで操作を1行に配置。実画面も確認しました。Android実機のタッチ試験とは区別します。
+- 確認中、重大なMathveoのJavaScript例外は観測していません。Chrome拡張のメタデータ送信エラーはアプリと区別しました。
+
+確認できなかったこと：この環境ではHTML videoが0秒・readyState 0のままで、実映像・音声の連続再生、実再生中のシーク、再生位置からの再開は未確認です。全画面ボタンはFullscreen APIを呼びますが、この確認ブラウザでは開始に失敗し、アプリの案内が表示されました。全画面の実表示・終了は未確認です。全1,024本の再生を検査したという報告ではありません。
+
+YouTubeのタイトル・投稿者・ロゴ・リンクは、公式プレーヤー自身の表示として残ります。`showinfo`と`modestbranding`は廃止済みで、公式埋め込みを完全に映像だけにする設定はありません。帰属表示・広告・リンクの隠蔽、iframeの切り抜き、動画ファイルの取得は実装していません。参照：[公式パラメータ](https://developers.google.com/youtube/player_parameters)、[IFrame Player API](https://developers.google.com/youtube/iframe_api_reference)。
+
+公開画面：[PCの操作バー](screenshots/player-controls.jpg)、[スマートフォン幅](screenshots/player-controls-mobile.jpg)。UI Implementation Quality Skillを、映像と操作の分離、実際の状態表示、キーボードでの音量操作、タップ領域、端末別の配置と実画面確認に適用しました。
+
 ## 2026-10-12：サムネイルなしの選択画面と表示タイトル
 
 ユーザーの指定に合わせ、単元の選択画面を番号・授業名・必要な区別だけのリストにしました。検索結果、関連動画、教材テーマの選択でも動画サムネイルを表示しません。視聴プレーヤーは維持しています。
