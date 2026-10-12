@@ -23,6 +23,14 @@ npm run preview
 
 `dist/` をHTTPSの静的ホストに配置できます。相対パスとハッシュルーティングを使うのでサブディレクトリでも動作します。プレビューと開発サーバーを同時に同じポートで起動しないでください。
 
+## GitHub Pages
+
+公開先は `https://totoro0419.github.io/Mathveo/` です。`.github/workflows/pages.yml` がmainの更新ごとに型・機能検査、ビルド、Pagesへのデプロイを行います。初回のみリポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** に設定してください。
+
+公開の成否はGitHub Actionsの **Deploy Mathveo to GitHub Pages** と `github-pages` 環境のデプロイ結果で確認します。ワークフローの追加だけを公開成功とは扱いません。
+
+アプリの数式・フォント・アイコン・Service Workerは相対パスで配信します。画面遷移は `#/library` などのハッシュ形式なので、教材の直リンクや再読み込みでもPagesの404を避けられます。別の公開URLで使っていた学習記録は、自動では移行されません。
+
 ## 初期版で使えるもの
 
 - ホーム：続きから学習、科目への移動、最近の学習、実際の学習済み件数、復習待ち。
