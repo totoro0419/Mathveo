@@ -3,6 +3,8 @@ import { Play, RotateCcw, WifiOff } from "lucide-react";
 import type { LearningStore } from "../hooks/useLearning";
 import type { VideoRecord } from "../domain/types";
 import { VideoThumbnail } from "./VideoThumbnail";
+import { PlayerControls, initialPlayback } from "./PlayerControls";
+import type { PlaybackSnapshot } from "./PlayerControls";
 
 interface Player {
   destroy(): void;
@@ -11,6 +13,15 @@ interface Player {
   seekTo(seconds: number, allowSeekAhead: boolean): void;
   getPlayerState(): number;
   pauseVideo(): void;
+  playVideo(): void;
+  getPlaybackRate(): number;
+  getAvailablePlaybackRates(): number[];
+  setPlaybackRate(rate: number): void;
+  getVolume(): number;
+  setVolume(volume: number): void;
+  isMuted(): boolean;
+  mute(): void;
+  unMute(): void;
 }
 interface YoutubeApi {
   Player: new (
@@ -66,6 +77,15 @@ export function YouTubePlayer({
 }) {
   const id = useId();
   const container = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<Player | null>(null);
+  const [playback, setPlayback] = useState<PlaybackSnapshot>(initialPlayback);
+  const [seekPreview, setSeekPreview] = useState<number | null>(null);
+  const seeking = useRef(false);
+  const desiredSeek = useRef(0);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [controlNotice, setControlNotice] = useState("");
+  const lastVolume = useRef(100);
   const [started, setStarted] = useState(autoLoad);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
@@ -76,6 +96,8 @@ export function YouTubePlayer({
   saveRef.current = learning.save;
   const record = learning.get(`video:${video.id}`);
   const position = useRef(record.position);
+  const recordRef = useRef(record);
+  recordRef.current = record;
   const [offline, setOffline] = useState(!navigator.onLine);
   useEffect(() => {
     position.current = record.position;
@@ -91,11 +113,46 @@ export function YouTubePlayer({
   }, []);
 
   useEffect(() => {
+    const update = () =>
+      setFullscreen(document.fullscreenElement === root.current);
+    document.addEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
+  }, []);
+
+  useEffect(() => {
     if (!started || !container.current) return;
     let disposed = false;
     let player: Player | null = null;
     let timer: ReturnType<typeof setInterval> | null = null;
     let lastPosition = -1;
+    let lastSavedAt = 0;
+    const syncControls = () => {
+      if (disposed || !playerReady || !player) return;
+      const rates = player.getAvailablePlaybackRates();
+      const snapshot: PlaybackSnapshot = {
+        time: Math.max(0, player.getCurrentTime() || 0),
+        duration: Math.max(0, player.getDuration() || 0),
+        state: player.getPlayerState(),
+        rate: player.getPlaybackRate() || 1,
+        rates: Array.isArray(rates) && rates.length ? rates : [1],
+        volume: player.getVolume(),
+        muted: player.isMuted(),
+      };
+      setPlayback((previous) => {
+        const time = seeking.current ? previous.time : snapshot.time;
+        if (
+          previous.time === time &&
+          previous.duration === snapshot.duration &&
+          previous.state === snapshot.state &&
+          previous.rate === snapshot.rate &&
+          previous.volume === snapshot.volume &&
+          previous.muted === snapshot.muted &&
+          previous.rates.join() === snapshot.rates.join()
+        )
+          return previous;
+        return { ...snapshot, time };
+      });
+    };
     let playerReady = false;
     let hasPlaybackStarted = false;
     let readinessTimer: ReturnType<typeof setTimeout> | null = null;
@@ -128,10 +185,30 @@ export function YouTubePlayer({
     };
     setState("loading");
     setError("");
+    setControlNotice("");
+    setPlayback(initialPlayback);
+    setSeekPreview(null);
+    seeking.current = false;
     loadPlayerApi()
       .then((api) => {
         if (disposed || !container.current) return;
-        const target = document.createElement("div");
+        const target = document.createElement("iframe");
+        target.title = video.title;
+        target.referrerPolicy = "strict-origin-when-cross-origin";
+        target.allow =
+          "autoplay; encrypted-media; picture-in-picture; fullscreen; accelerometer; gyroscope; clipboard-write; web-share";
+        target.allowFullscreen = true;
+        const params = new URLSearchParams({
+          enablejsapi: "1",
+          controls: "0",
+          playsinline: "1",
+          autoplay: "0",
+          origin: window.location.origin,
+          rel: "0",
+          hl: "ja",
+          iv_load_policy: "3",
+        });
+        target.src = `https://www.youtube.com/embed/${video.id}?${params}`;
         container.current.replaceChildren(target);
         readinessTimer = setTimeout(() => {
           if (!disposed) {
@@ -144,20 +221,14 @@ export function YouTubePlayer({
         player = new api.Player(target, {
           width: "100%",
           height: "100%",
-          videoId: video.id,
-          playerVars: {
-            playsinline: 1,
-            controls: 1,
-            origin: window.location.origin,
-            rel: 0,
-          },
           events: {
             onReady: () => {
               if (disposed || !player) return;
               playerReady = true;
+              playerRef.current = player;
               if (readinessTimer) clearTimeout(readinessTimer);
               setState("ready");
-              if (position.current > 0 && !record.playbackEnded)
+              if (position.current > 0 && !recordRef.current.playbackEnded)
                 player.seekTo(position.current, true);
               const iframe = container.current?.querySelector("iframe");
               if (iframe) {
@@ -167,15 +238,34 @@ export function YouTubePlayer({
                   "strict-origin-when-cross-origin",
                 );
               }
+              syncControls();
               timer = setInterval(() => {
-                if (player?.getPlayerState() === 1) persist();
-              }, 2000);
+                syncControls();
+                if (
+                  player?.getPlayerState() === 1 &&
+                  Date.now() - lastSavedAt >= 2000
+                ) {
+                  persist();
+                  lastSavedAt = Date.now();
+                }
+              }, 500);
             },
             onStateChange: (event: { data: number }) => {
               if (disposed) return;
               if (event.data === 1) hasPlaybackStarted = true;
               if (event.data === 0) persist(true);
               if (event.data === 2) persist();
+              if (event.data === 1) setControlNotice("");
+              syncControls();
+            },
+            onPlaybackRateChange: () => {
+              if (!disposed) syncControls();
+            },
+            onAutoplayBlocked: () => {
+              if (!disposed)
+                setControlNotice(
+                  "ブラウザが再生を保留しました。もう一度再生ボタンを押してください。",
+                );
             },
             onError: (event: { data: number }) => {
               if (disposed) return;
@@ -204,6 +294,7 @@ export function YouTubePlayer({
       if (timer) clearInterval(timer);
       if (readinessTimer) clearTimeout(readinessTimer);
       document.removeEventListener("visibilitychange", onVisibility);
+      playerRef.current = null;
       if (player) {
         persist();
         player.destroy();
@@ -213,8 +304,67 @@ export function YouTubePlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [video.id, started, attempt]);
 
+  const togglePlayback = () => {
+    const player = playerRef.current;
+    if (!player || state !== "ready") return;
+    if (player.getPlayerState() === 1 || player.getPlayerState() === 3)
+      player.pauseVideo();
+    else player.playVideo();
+  };
+  const seekTo = (seconds: number, commit = true) => {
+    const player = playerRef.current;
+    if (!player || state !== "ready" || !playback.duration) return;
+    const time = Math.max(0, Math.min(playback.duration, seconds));
+    desiredSeek.current = time;
+    setSeekPreview(time);
+    player.seekTo(time, commit);
+    if (commit) {
+      setPlayback((previous) => ({ ...previous, time }));
+      setSeekPreview(null);
+    }
+  };
+  const changeRate = (rate: number) => {
+    if (state === "ready" && playback.rates.includes(rate))
+      playerRef.current?.setPlaybackRate(rate);
+  };
+  const changeVolume = (volume: number) => {
+    const player = playerRef.current;
+    if (!player || state !== "ready") return;
+    if (volume > 0) lastVolume.current = volume;
+    player.setVolume(volume);
+    if (volume > 0 && player.isMuted()) player.unMute();
+    setPlayback((previous) => ({
+      ...previous,
+      volume,
+      muted: volume > 0 ? false : previous.muted,
+    }));
+  };
+  const toggleMute = () => {
+    const player = playerRef.current;
+    if (!player || state !== "ready") return;
+    const unmute = player.isMuted() || player.getVolume() === 0;
+    const volume =
+      unmute && player.getVolume() === 0
+        ? lastVolume.current
+        : player.getVolume();
+    if (unmute) {
+      player.unMute();
+      if (player.getVolume() === 0) player.setVolume(volume);
+    } else player.mute();
+    setPlayback((previous) => ({ ...previous, muted: !unmute, volume }));
+  };
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement === root.current)
+        await document.exitFullscreen();
+      else await root.current?.requestFullscreen();
+    } catch {
+      setControlNotice("このブラウザでは全画面表示を開始できませんでした。");
+    }
+  };
+
   return (
-    <div className="youtube-block">
+    <div className="youtube-block mathveo-player" ref={root}>
       {!started ? (
         <button
           className="video-cover"
@@ -246,13 +396,39 @@ export function YouTubePlayer({
       ) : (
         <div className="player-wrapper">
           <div ref={container} id={`player-${id}`} className="player-frame" />
-          {state === "loading" && (
-            <div className="player-loading" role="status">
-              <span className="spinner" />
-              YouTubeに接続中…
-            </div>
-          )}
         </div>
+      )}
+      {started && (
+        <PlayerControls
+          playback={playback}
+          ready={state === "ready"}
+          offline={offline}
+          fullscreen={fullscreen}
+          fullscreenAvailable={Boolean(document.fullscreenEnabled)}
+          status={
+            state === "loading"
+              ? "プレーヤーを読み込み中…"
+              : playback.state === 3
+                ? "動画を読み込み中…"
+                : controlNotice
+          }
+          seekPreview={seekPreview}
+          onToggle={togglePlayback}
+          onSkip={(seconds) => seekTo(playback.time + seconds)}
+          onSeekStart={() => {
+            seeking.current = true;
+            desiredSeek.current = playback.time;
+          }}
+          onSeek={(seconds) => seekTo(seconds, !seeking.current)}
+          onSeekEnd={() => {
+            seeking.current = false;
+            seekTo(desiredSeek.current, true);
+          }}
+          onRate={changeRate}
+          onVolume={changeVolume}
+          onMute={toggleMute}
+          onFullscreen={() => void toggleFullscreen()}
+        />
       )}
       {offline && (
         <p className="inline-notice">

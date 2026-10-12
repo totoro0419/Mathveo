@@ -2525,17 +2525,167 @@ main:focus {
   height: 100%;
   min-height: 200px;
 }
-.player-loading {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+.media-controls {
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--border);
+  background: white;
+}
+.media-seek-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 10px;
+}
+.media-time {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.media-time:last-child {
+  text-align: right;
+}
+.media-controls input[type="range"] {
+  height: 44px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.media-controls input:disabled,
+.media-controls select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.media-control-actions,
+.media-playback-group,
+.media-volume-group,
+.media-speed-group {
   display: flex;
   align-items: center;
+}
+.media-control-actions {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.media-playback-group,
+.media-speed-group {
+  gap: 4px;
+}
+.media-button,
+.media-speed-quick {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  gap: 11px;
-  font-size: 0.77rem;
-  color: #6782a8;
-  background: #f4f8fe;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #445777;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.media-button:hover:not(:disabled),
+.media-speed-quick:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--primary);
+}
+.media-play-button {
+  background: var(--primary);
+  color: white;
+}
+.media-play-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  color: white;
+}
+.media-play-button svg {
+  stroke-width: 1.5;
+}
+.media-skip-button {
+  position: relative;
+}
+.media-skip-button svg {
+  width: 27px;
+  height: 27px;
+  stroke-width: 1.6;
+}
+.media-skip-button span {
+  position: absolute;
+  font-size: 0.56rem;
+  font-weight: 600;
+  padding-top: 2px;
+}
+.media-volume-group {
+  gap: 2px;
+}
+.media-volume-group input[type="range"] {
+  width: 64px;
+}
+.media-speed-group {
+  margin-left: auto;
+}
+.media-speed-select select {
+  min-height: 44px;
+  width: 73px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 8px;
+  background: white;
+  color: var(--navy);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.media-speed-quick {
+  font-weight: 600;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.media-speed-quick.active {
+  background: var(--surface);
+  color: var(--primary);
+}
+.media-status {
+  margin: 8px 0 0;
+  font-size: 0.71rem;
+  color: var(--muted);
+}
+.mathveo-player:fullscreen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: #142038;
+}
+.mathveo-player:fullscreen .player-wrapper {
+  flex: 1;
+  aspect-ratio: auto;
+  min-height: 200px;
+  background: #142038;
+}
+.mathveo-player:fullscreen .media-controls {
+  flex: 0 0 auto;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+@media (max-width: 480px) {
+  .media-controls {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .media-control-actions {
+    gap: 8px 10px;
+  }
+  .media-speed-group {
+    margin-left: 0;
+  }
+  .media-fullscreen-button {
+    margin-left: auto;
+  }
 }
 .player-footer {
   display: flex;
