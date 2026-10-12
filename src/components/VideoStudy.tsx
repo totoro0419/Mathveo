@@ -1,18 +1,22 @@
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
+  Bookmark,
   Check,
   ChevronRight,
   Play,
 } from "lucide-react";
-import type { VideoRecord } from "../domain/types";
+import { useEffect } from "react";
+import type { VideoRecord, Understanding } from "../domain/types";
+import { understandingLabels } from "../domain/types";
 import { officialPlaylists } from "../data/playlists";
 import { subjects, topics, videoTopicLinks } from "../data/catalog";
 import { unitVideos } from "../data/video-library";
 import type { LearningStore } from "../hooks/useLearning";
 import { YouTubePlayer } from "./YouTubePlayer";
 import { lessonPresentations, lessonLabel } from "../domain/video-title";
+import { supplementalLabel, videoMaterials } from "../domain/library";
+import { RelatedMaterials } from "./RelatedMaterials";
 
 export function VideoStudy({
   video,
@@ -41,6 +45,16 @@ export function VideoStudy({
   const currentTitle = presentations[index];
   const record = learning.get(`video:${video.id}`);
   const links = videoTopicLinks.filter((l) => l.videoId === video.id);
+  const { ready, save } = learning;
+  useEffect(() => {
+    if (ready && !record.updatedAt)
+      void save(`video:${video.id}`, { status: "learning" });
+  }, [ready, save, video.id, record.updatedAt]);
+  const relatedTopics = topics.filter(
+    (topic) =>
+      videoMaterials(video).some((t) => t.id === topic.id) ||
+      links.some((link) => link.topicId === topic.id),
+  );
   const href = (id: string) =>
     `#/video/${id}?unit=${unit?.id ?? ""}&mode=${mode}`;
   return (
@@ -64,7 +78,9 @@ export function VideoStudy({
           />
           <div className="individual-video-heading">
             <span className="lesson-order">
-              LESSON {String(index + 1).padStart(2, "0")}
+              {unit
+                ? `LESSON ${String(index + 1).padStart(2, "0")}`
+                : supplementalLabel(video)}
               {unit && ` / ${lessons.length}`}
               {lessonLabel(currentTitle) && ` · ${lessonLabel(currentTitle)}`}
             </span>
@@ -105,26 +121,51 @@ export function VideoStudy({
               <Check size={16} />
               {record.status === "completed" ? "学習済み" : "学習済みにする"}
             </button>
+            <button
+              className={`button secondary small ${record.review ? "review-selected" : ""}`}
+              disabled={!learning.ready}
+              aria-pressed={record.review}
+              onClick={() =>
+                void learning.save(`video:${video.id}`, {
+                  review: !record.review,
+                })
+              }
+            >
+              <Bookmark
+                size={16}
+                fill={record.review ? "currentColor" : "none"}
+              />
+              {record.review ? "復習に登録済み" : "復習に登録"}
+            </button>
           </div>
-          {links.length > 0 && (
-            <section className="playlist-material-note">
-              <BookOpen size={21} />
-              <div>
-                <h2>関連する数学教材</h2>
-                <div className="playlist-material-links">
-                  {links.map((link) => {
-                    const topic = topics.find((t) => t.id === link.topicId)!;
-                    return (
-                      <a key={topic.id} href={`#/material/${topic.id}`}>
-                        {topic.title}
-                        <ArrowRight size={14} />
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-          )}
+          <div className="video-understanding">
+            <label htmlFor="video-understanding">この授業の理解度</label>
+            <select
+              id="video-understanding"
+              value={record.understanding}
+              disabled={!learning.ready}
+              onChange={(e) => {
+                const value = e.target.value as Understanding;
+                void learning.save(`video:${video.id}`, {
+                  understanding: value,
+                  ...(value === "review" ? { review: true } : {}),
+                });
+              }}
+            >
+              {Object.entries(understandingLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <span>再生完了とは別に記録</span>
+          </div>
+          <RelatedMaterials
+            topics={relatedTopics}
+            candidateIds={links
+              .filter((link) => link.relation === "candidate")
+              .map((link) => link.topicId)}
+          />
           <details className="video-evidence compact-video-details">
             <summary>
               動画の詳細

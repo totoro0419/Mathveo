@@ -26,6 +26,7 @@ export interface VideoRecord {
   currentSubjects: SubjectId[];
   classification: "verified" | "needs-review";
   classificationEvidence: string;
+  supplementalCategory?: "supplement" | "exam" | "needs-review";
 }
 
 export interface VideoTopicLink {
@@ -64,6 +65,7 @@ export interface Topic {
   id: string;
   subject: SubjectId;
   unit: string;
+  unitIds: string[];
   order: number;
   title: string;
   subtitle: string;

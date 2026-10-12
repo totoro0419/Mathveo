@@ -24,9 +24,18 @@ const { unitVideos, registeredInventory } = await server.ssrLoadModule(
 );
 const { videoPresentation, lessonPresentations, lessonLabel } =
   await server.ssrLoadModule("/src/domain/video-title.ts");
-const { searchCatalog, normalizeSearch } = await server.ssrLoadModule(
-  "/src/domain/search.ts",
-);
+const { searchCatalog, normalizeSearch, rankVideos } =
+  await server.ssrLoadModule("/src/domain/search.ts");
+const {
+  learningEntries,
+  resumeEntry,
+  unitMaterials,
+  videoMaterials,
+  subjectProgress,
+  primaryUnit,
+  supplementalVideos,
+} = await server.ssrLoadModule("/src/domain/library.ts");
+const { defaultRecord } = await server.ssrLoadModule("/src/domain/types.ts");
 
 test("all published formulas and worked examples render as strict KaTeX", () => {
   for (const t of topics) {
@@ -142,6 +151,104 @@ test("every imported unit resolves all individual videos, including later lesson
   );
   const later = unitVideos(trig.id)[1];
   assert.ok(searchCatalog(later.title).videos.some((v) => v.id === later.id));
+});
+
+test("all 1024 video IDs survive; supplemental videos do not displace official lessons", () => {
+  assert.equal(videos.length, 1024);
+  for (const imported of registeredInventory.videos) {
+    assert.deepEqual(
+      videos.find((video) => video.id === imported.id),
+      imported,
+    );
+  }
+  const exercise = videos.find((video) => video.id === "P84CrKaIob0");
+  assert.equal(unitVideos(primaryUnit(exercise).id)[5].id, exercise.id);
+  assert.deepEqual(
+    new Set(supplementalVideos("I").map((video) => video.id)),
+    new Set(["ssuKwW6MBvo", "jTx2zwMW6Ho"]),
+  );
+  assert.ok(
+    supplementalVideos("special").some((video) => video.id === "jTx2zwMW6Ho"),
+  );
+});
+
+test("search ranks direct title matches first and does not depend on registration order", () => {
+  const forward = rankVideos("平方完成", videos);
+  const reversed = rankVideos("平方完成", [...videos].reverse());
+  assert.deepEqual(
+    forward.map((video) => video.id),
+    reversed.map((video) => video.id),
+  );
+  assert.equal(videoPresentation(forward[0]).title, "平方完成");
+  assert.ok(primaryUnit(forward[0]));
+  assert.notEqual(forward[0].id, "P84CrKaIob0");
+  assert.notEqual(forward[0].id, "ssuKwW6MBvo");
+  assert.equal(rankVideos("2017")[0].id, "jTx2zwMW6Ho");
+  assert.equal(searchCatalog(" ").videos.length, 0);
+});
+
+test("history reads existing video and topic keys without changing notes or positions", () => {
+  const trig = officialPlaylists.find(
+    (unit) => unit.current === "II" && unit.title === "三角関数",
+  );
+  const video = unitVideos(trig.id)[1];
+  const videoKey = `video:${video.id}`;
+  const topicKey = `topic:${topics[0].id}`;
+  const records = {
+    [videoKey]: {
+      ...defaultRecord(videoKey),
+      status: "learning",
+      position: 83,
+      duration: 189,
+      note: "既存のメモ",
+      review: true,
+      updatedAt: 100,
+    },
+    [topicKey]: {
+      ...defaultRecord(topicKey),
+      status: "learning",
+      updatedAt: 200,
+    },
+  };
+  const before = JSON.stringify(records);
+  const entries = learningEntries(records);
+  assert.equal(entries.length, 2);
+  assert.equal(resumeEntry(entries).key, videoKey);
+  assert.ok(resumeEntry(entries).href.includes(video.id));
+  assert.ok(resumeEntry(entries).href.includes(trig.id));
+  assert.equal(
+    entries.find((entry) => entry.key === videoKey).record.position,
+    83,
+  );
+  assert.equal(
+    entries.find((entry) => entry.key === videoKey).record.note,
+    "既存のメモ",
+  );
+  assert.equal(JSON.stringify(records), before);
+  assert.equal(learningEntries({}).length, 0);
+  assert.equal(resumeEntry([]), undefined);
+});
+
+test("materials attach by unit ID and progress counts unique videos rather than three prototype topics", () => {
+  const quadratic = officialPlaylists.find((unit) => unit.title === "２次関数");
+  assert.equal(unitMaterials(quadratic.id).length, 3);
+  assert.equal(videoMaterials(unitVideos(quadratic.id)[4]).length, 3);
+  const currentC = officialPlaylists.filter((unit) => unit.current === "C");
+  const allIds = new Set(
+    currentC.flatMap((unit) => unitVideos(unit.id).map((video) => video.id)),
+  );
+  const completedKey = `video:${[...allIds][0]}`;
+  const records = {
+    [completedKey]: {
+      ...defaultRecord(completedKey),
+      status: "completed",
+      updatedAt: 100,
+    },
+  };
+  assert.equal(subjectProgress("C", records).total, allIds.size);
+  assert.equal(subjectProgress("C", records).completed, 1);
+  assert.equal(subjectProgress("B", records, "official").completed, 1);
+  assert.equal(unitMaterials(currentC[0].id).length, 0);
 });
 
 test("editorial titles keep the source and distinguish lessons without guessing", () => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -14,7 +14,6 @@ import {
   Info,
   Laptop,
   Library as LibraryIcon,
-  ListFilter,
   Play,
   Search,
   Settings,
@@ -33,7 +32,7 @@ import {
 } from "./data/catalog";
 import { officialPlaylists } from "./data/playlists";
 import type { Topic } from "./domain/types";
-import { statusLabels, understandingLabels } from "./domain/types";
+import { statusLabels } from "./domain/types";
 import { searchCatalog } from "./domain/search";
 import { useLearning } from "./hooks/useLearning";
 import type { LearningStore } from "./hooks/useLearning";
@@ -41,7 +40,7 @@ import { useRoute } from "./hooks/useRoute";
 import type { Route } from "./hooks/useRoute";
 import { Tabs } from "./components/Tabs";
 import { MathText } from "./components/Math";
-import { ParabolaGraph } from "./components/Graph";
+
 import {
   FormulaSection,
   ExplanationSection,
@@ -55,8 +54,13 @@ import {
 import { YouTubePlayer } from "./components/YouTubePlayer";
 import { PlaylistStudy } from "./components/PlaylistStudy";
 import { VideoStudy } from "./components/VideoStudy";
-import { unitVideos, registeredInventory } from "./data/video-library";
+import { registeredInventory } from "./data/video-library";
 import { videoPresentation } from "./domain/video-title";
+import { learningEntries, videoHref } from "./domain/library";
+import { PageTitle, Empty } from "./components/Page";
+import { HomePage } from "./components/HomePage";
+import { LibraryPage } from "./components/LibraryPage";
+import { ReviewPage } from "./components/ReviewPage";
 
 const navItems = [
   { id: "home", label: "ホーム", icon: HomeIcon, href: "#/home" },
@@ -75,49 +79,6 @@ function navId(page: string) {
       ? "library"
       : page;
 }
-function PageTitle({
-  eyebrow,
-  title,
-  description,
-  action,
-}: {
-  eyebrow: string;
-  title: string;
-  description?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="page-title">
-      <div>
-        <span className="eyebrow">{eyebrow}</span>
-        <h1 tabIndex={-1}>{title}</h1>
-        {description && <p>{description}</p>}
-      </div>
-      {action}
-    </div>
-  );
-}
-function Empty({
-  title,
-  description,
-  children,
-  icon = <BookOpen size={25} />,
-}: {
-  title: string;
-  description: string;
-  children?: ReactNode;
-  icon?: ReactNode;
-}) {
-  return (
-    <div className="empty-state">
-      <span className="empty-icon">{icon}</span>
-      <h3>{title}</h3>
-      <p>{description}</p>
-      {children}
-    </div>
-  );
-}
-
 function TopicRows({
   list = topics,
   learning,
@@ -132,7 +93,11 @@ function TopicRows({
       {list.map((topic) => {
         const record = learning.get(`topic:${topic.id}`);
         return (
-          <a href={`#/watch/${topic.id}`} className="topic-row" key={topic.id}>
+          <a
+            href={`#/material/${topic.id}`}
+            className="topic-row"
+            key={topic.id}
+          >
             <span
               className={`topic-order ${record.status === "completed" ? "done" : ""}`}
             >
@@ -144,7 +109,10 @@ function TopicRows({
             </span>
             <div className="topic-row-text">
               <span className="topic-meta">
-                数学Ⅰ<span>／</span>二次関数
+                {subjects.find((s) => s.id === topic.subject)?.name}
+                <span>／</span>
+                {topic.unit}
+                <span>／</span>独自教材
               </span>
               <h3>{topic.title}</h3>
               {!compact && <p>{topic.summary}</p>}
@@ -164,399 +132,6 @@ function TopicRows({
         );
       })}
     </div>
-  );
-}
-
-function HomePage({ learning }: { learning: LearningStore }) {
-  const completed = topics.filter(
-    (t) => learning.get(`topic:${t.id}`).status === "completed",
-  ).length;
-  const started = topics
-    .filter((t) => learning.get(`topic:${t.id}`).updatedAt > 0)
-    .sort(
-      (a, b) =>
-        learning.get(`topic:${b.id}`).updatedAt -
-        learning.get(`topic:${a.id}`).updatedAt,
-    );
-  const inProgress = started.find(
-    (t) => learning.get(`topic:${t.id}`).status === "learning",
-  );
-  const resume =
-    inProgress ??
-    topics.find((t) => learning.get(`topic:${t.id}`).status !== "completed") ??
-    topics[0];
-  const resumeLabel = inProgress
-    ? "続きから学習する"
-    : completed === topics.length
-      ? "もう一度復習する"
-      : completed > 0
-        ? "次のテーマへ"
-        : "学習をはじめる";
-  const reviews = topics.filter((t) => learning.get(`topic:${t.id}`).review);
-  return (
-    <>
-      <PageTitle
-        eyebrow="YOUR LEARNING SPACE"
-        title="数学の学びを、ひとつに。"
-        description="動画でつかむ。数式でつながる。自分のペースで、理解を深めよう。"
-      />
-      <section className="home-hero">
-        <div className="hero-copy">
-          <div className="hero-tags">
-            <span className="tag blue">数学Ⅰ</span>
-            <span className="tag plain">二次関数</span>
-          </div>
-          <h2>
-            式の向こうに、
-            <br />
-            グラフが見えてくる。
-          </h2>
-          <p>
-            平方完成から最大・最小まで。
-            <br className="desktop-break" />
-            授業動画と公式・解説・例題を、一か所で。
-          </p>
-          <a className="button primary" href={`#/watch/${resume.id}`}>
-            <Play size={17} fill="currentColor" />
-            {resumeLabel}
-            <ArrowRight size={17} />
-          </a>
-          <span className="hero-footnote">
-            {started.length
-              ? resume.title
-              : "3つのテーマで、二次関数の基礎を学ぶ"}
-          </span>
-        </div>
-        <div className="hero-visual">
-          <span className="hero-equation">y = a(x − p)² + q</span>
-          <ParabolaGraph hero />
-          <span className="hero-visual-note">
-            <span className="tiny-dot" />
-            式とグラフを、つなげる。
-          </span>
-        </div>
-      </section>
-      <section className="subjects-section">
-        <div className="section-heading">
-          <h2>科目から探す</h2>
-          <a href="#/library">
-            すべて見る
-            <ArrowRight size={15} />
-          </a>
-        </div>
-        <div className="subject-shortcuts">
-          {subjects.slice(0, 6).map((subject) => (
-            <a key={subject.id} href={`#/library?subject=${subject.id}`}>
-              <span className="subject-symbol">{subject.symbol}</span>
-              <strong>{subject.name}</strong>
-              <ChevronRight size={15} />
-            </a>
-          ))}
-        </div>
-        <div className="extra-subjects">
-          <a href="#/library?subject=junior">
-            中学数学
-            <ArrowRight size={13} />
-          </a>
-          <a href="#/library?subject=special">
-            総復習・入試・特別講義
-            <ArrowRight size={13} />
-          </a>
-        </div>
-      </section>
-      <div className="home-lower">
-        <section className="learning-path">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">STEP BY STEP</span>
-              <h2>二次関数の学習ガイド</h2>
-            </div>
-            <span className="muted-text">3テーマ</span>
-          </div>
-          <TopicRows learning={learning} />
-          <a href="#/materials" className="subtle-link">
-            <BookOpen size={16} />
-            公式・解説・例題だけを読む
-            <ArrowRight size={15} />
-          </a>
-        </section>
-        <aside className="home-aside">
-          <section className="progress-summary">
-            <div className="section-heading">
-              <h2>学びの記録</h2>
-              <span className="tag plain">このブラウザ</span>
-            </div>
-            <div className="progress-number">
-              <strong>{completed}</strong>
-              <span>/ 3 テーマ 学習済み</span>
-            </div>
-            <div
-              className="progress-track"
-              role="progressbar"
-              aria-label="二次関数の学習済みテーマ"
-              aria-valuenow={completed}
-              aria-valuemin={0}
-              aria-valuemax={3}
-            >
-              <span style={{ width: `${(completed / 3) * 100}%` }} />
-            </div>
-            <p>
-              {completed
-                ? "積み重ねた理解を、ときどき確かめよう。"
-                : "最初のテーマから、少しずつ始めよう。"}
-            </p>
-          </section>
-          <section className="review-preview">
-            <div className="section-heading">
-              <h2>
-                <Bookmark size={17} />
-                復習待ち
-              </h2>
-              <span className="count-badge">{reviews.length}</span>
-            </div>
-            {reviews.length ? (
-              reviews.slice(0, 2).map((t) => (
-                <a
-                  className="aside-topic"
-                  href={`#/material/${t.id}`}
-                  key={t.id}
-                >
-                  {t.title}
-                  <ArrowRight size={16} />
-                </a>
-              ))
-            ) : (
-              <p>気になるテーマを復習に登録すると、ここからすぐに戻れます。</p>
-            )}
-            <a href="#/review" className="subtle-link">
-              復習リストを開く
-              <ArrowRight size={14} />
-            </a>
-          </section>
-        </aside>
-      </div>
-      <div className="home-bottom">
-        <section>
-          <div className="section-heading">
-            <h2>最近の学習</h2>
-          </div>
-          {started.length ? (
-            <TopicRows list={started.slice(0, 2)} learning={learning} compact />
-          ) : (
-            <p className="quiet-empty">
-              まだ学習記録はありません。テーマを開くと、続きから再開できます。
-            </p>
-          )}
-        </section>
-        <section className="new-videos">
-          <div className="section-heading">
-            <h2>新着数学動画</h2>
-            <span className="tag muted">同期前</span>
-          </div>
-          <p>チャンネル全体の新着情報はまだ取得していません。</p>
-        </section>
-      </div>
-    </>
-  );
-}
-
-function LibraryPage({
-  route,
-  learning,
-}: {
-  route: Route;
-  learning: LearningStore;
-}) {
-  const rawSubject = route.query.get("subject") ?? "I";
-  const subject = subjects.find((s) => s.id === rawSubject) ?? subjects[0];
-  const mode = route.query.get("mode") === "official" ? "official" : "current";
-  const filter = route.query.get("state") ?? "all";
-  const update = (patch: Record<string, string>) => {
-    const query = new URLSearchParams(route.query);
-    for (const [k, v] of Object.entries(patch)) query.set(k, v);
-    window.location.hash = `/library?${query}`;
-  };
-  const lists = officialPlaylists.filter(
-    (p) => (mode === "official" ? p.original : p.current) === subject.id,
-  );
-  const lessons = topics.filter(
-    (t) =>
-      t.subject === subject.id &&
-      (filter === "all" || learning.get(`topic:${t.id}`).status === filter),
-  );
-  return (
-    <>
-      <PageTitle
-        eyebrow="MATH LIBRARY"
-        title="単元から、学びを探そう。"
-        description="科目と単元をたどって、必要な動画・教材にすぐアクセス。"
-      />
-      <nav className="subject-navigation" aria-label="科目選択">
-        {subjects.map((s) => (
-          <a
-            href={`#/library?subject=${s.id}&mode=${mode}`}
-            key={s.id}
-            aria-current={subject.id === s.id ? "page" : undefined}
-            className={subject.id === s.id ? "active" : ""}
-          >
-            {s.name}
-          </a>
-        ))}
-      </nav>
-      <div className="library-controls">
-        <div className="library-subject">
-          <span className="subject-symbol large">{subject.symbol}</span>
-          <div>
-            <h2>{subject.name}</h2>
-            <p>{subject.summary}</p>
-          </div>
-        </div>
-        <div className="filter-controls">
-          <label>
-            <ListFilter size={15} />
-            <span className="sr-only">分類方法</span>
-            <select
-              aria-label="分類方法"
-              value={mode}
-              onChange={(e) => update({ mode: e.target.value })}
-            >
-              <option value="current">現行課程の分類</option>
-              <option value="official">公式サイトの分類</option>
-            </select>
-          </label>
-          <label>
-            <span className="sr-only">教材の学習状態</span>
-            <select
-              aria-label="教材の学習状態"
-              value={filter}
-              onChange={(e) => update({ state: e.target.value })}
-            >
-              <option value="all">教材：すべての学習状態</option>
-              {Object.entries(statusLabels).map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </div>
-      <div className="library-body">
-        <section className="library-main">
-          {(lessons.length > 0 || filter !== "all") && (
-            <div className="section-heading">
-              <h2>利用できる教材</h2>
-              <span className="muted-text">{lessons.length}テーマ</span>
-            </div>
-          )}
-          {lessons.length ? (
-            <>
-              <div className="unit-heading">
-                <div>
-                  <span className="eyebrow">UNIT</span>
-                  <h3>二次関数</h3>
-                  <p>公式、グラフ、例題で基礎をつなげる。</p>
-                </div>
-                <ParabolaGraph hero />
-              </div>
-              <TopicRows list={lessons} learning={learning} />
-            </>
-          ) : filter !== "all" ? (
-            <Empty
-              title="条件に合う教材はありません"
-              description="教材の学習状態フィルタを変更してみてください。授業動画は下の単元から視聴できます。"
-            >
-              <button
-                className="button secondary small"
-                onClick={() => update({ state: "all" })}
-              >
-                フィルタを解除
-              </button>
-            </Empty>
-          ) : null}
-          <div className="section-heading official-heading">
-            <div>
-              <span className="eyebrow">LESSON LIBRARY</span>
-              <h2>単元別の授業動画</h2>
-            </div>
-            <span className="tag blue">アプリ内で視聴</span>
-          </div>
-          <p className="section-description">
-            単元を開いて授業を選び、動画ごとに学習できます。
-          </p>
-          {lists.length ? (
-            <div className="playlist-list">
-              {lists.map((list, i) => (
-                <a key={list.id} href={`#/unit/${list.id}?mode=${mode}`}>
-                  <span className="playlist-number">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <div>
-                    <strong>{list.title}</strong>
-                    <span>{unitVideos(list.id).length}本の授業</span>
-                  </div>
-                  <span className="external-label">
-                    視聴する
-                    <Play size={15} />
-                  </span>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <Empty
-              title="公式一覧の参照先"
-              description={
-                subject.id === "C"
-                  ? "公式サイトでは旧課程の数学B・Ⅲに分類されています。現行課程へ切り替えると対応先を表示します。"
-                  : "この区分の動画は、まだ個別登録していません。公式サイトから確認できます。"
-              }
-            >
-              <a
-                className="button secondary small"
-                href={
-                  subject.id === "junior"
-                    ? "https://kouki-honda.jp/contents/"
-                    : OFFICIAL_SITE
-                }
-                target="_blank"
-                rel="noreferrer"
-              >
-                公式サイトへ
-                <ExternalLink size={14} />
-              </a>
-            </Empty>
-          )}
-        </section>
-        <aside className="library-aside">
-          <span className="eyebrow">SUBJECT GUIDE</span>
-          <h3>{mode === "current" ? "現行課程の単元" : "分類について"}</h3>
-          {mode === "current" ? (
-            <ul>
-              {subject.units.map((unit) => (
-                <li key={unit}>
-                  <span className="tiny-dot" />
-                  {unit}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>
-              公式サイトが公開している元の分類を保持しています。旧課程の動画も除外しません。
-            </p>
-          )}
-          <div className="library-info">
-            <Info size={18} />
-            <p>
-              旧数学Bのベクトルは現数学Cからも探せます。元の分類情報は保持しています。
-            </p>
-          </div>
-          <a className="subtle-link" href="#/about">
-            収録状況・出典について
-            <ArrowRight size={14} />
-          </a>
-        </aside>
-      </div>
-    </>
   );
 }
 
@@ -633,15 +208,17 @@ function TopicHeading({
   return (
     <>
       <nav className="breadcrumb" aria-label="パンくず">
-        <a href="#/library?subject=I">数学Ⅰ</a>
+        <a href={`#/library?subject=${topic.subject}`}>
+          {subjects.find((s) => s.id === topic.subject)?.name}
+        </a>
         <ChevronRight size={13} />
-        <a href="#/library?subject=I">二次関数</a>
+        <a href={`#/unit/${topic.unitIds[0]}`}>{topic.unit}</a>
         <ChevronRight size={13} />
         <span aria-current="page">{topic.title}</span>
       </nav>
       <div className="topic-heading">
         <div>
-          <span className="eyebrow">LESSON 0{topic.order}</span>
+          <span className="eyebrow">MATHVEO NOTEBOOK</span>
           <h1 tabIndex={-1}>{topic.title}</h1>
           <p>{topic.subtitle}</p>
         </div>
@@ -851,7 +428,7 @@ function SearchPage({
   const query = route.query.get("q") ?? "";
   const [value, setValue] = useState(query);
   useEffect(() => setValue(query), [query]);
-  const results = searchCatalog(query);
+  const results = useMemo(() => searchCatalog(query), [query]);
   const count =
     results.topics.length +
     results.videos.length +
@@ -873,7 +450,7 @@ function SearchPage({
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="平方完成、頂点、最大値…"
+          placeholder="三角関数、確率、微分、ベクトル…"
           aria-label="数学動画と教材を検索"
         />
         <button className="button primary" type="submit">
@@ -884,7 +461,7 @@ function SearchPage({
         <>
           <div className="search-suggestions">
             <span>すぐに探す</span>
-            {["平方完成", "三角関数", "微分", "ベクトル"].map((q) => (
+            {["確率", "三角関数", "微分", "ベクトル"].map((q) => (
               <a href={`#/search?q=${encodeURIComponent(q)}`} key={q}>
                 {q}
               </a>
@@ -892,7 +469,7 @@ function SearchPage({
           </div>
           <Empty
             title="学びの途中で、気になったら"
-            description="二次関数・2次関数、全角・半角などの表記揺れにも対応しています。現在の教材範囲は数学Ⅰ・二次関数です。"
+            description="収録済みの動画・単元・科目・独自教材から探せます。全角・半角などの表記揺れにも対応しています。"
             icon={<Search size={25} />}
           />
         </>
@@ -900,7 +477,7 @@ function SearchPage({
         <>
           <p className="result-count">
             「{query}」の検索結果：{count}件{" "}
-            <span>登録済みの動画・単元・教材が対象</span>
+            <span>検索語との関連度順 · 同順位は公式の授業順</span>
           </p>
           {count === 0 && (
             <Empty
@@ -908,14 +485,6 @@ function SearchPage({
               description="別の言葉で検索してみてください。チャンネル全体の動画は、まだ一括取得していません。"
               icon={<Search size={25} />}
             />
-          )}
-          {results.topics.length > 0 && (
-            <section className="search-result-section">
-              <h2>
-                数学教材<span>{results.topics.length}</span>
-              </h2>
-              <TopicRows list={results.topics} learning={learning} />
-            </section>
           )}
           {results.videos.length > 0 && (
             <section className="search-result-section">
@@ -925,11 +494,7 @@ function SearchPage({
               <div className="search-video-list">
                 {results.videos.map((v) => {
                   return (
-                    <a
-                      className="search-video"
-                      href={`#/video/${v.id}`}
-                      key={v.id}
-                    >
+                    <a className="search-video" href={videoHref(v)} key={v.id}>
                       <div>
                         <span className="topic-meta">
                           {v.currentSubjects
@@ -952,7 +517,7 @@ function SearchPage({
           {results.playlists.length > 0 && (
             <section className="search-result-section">
               <h2>
-                単元の単元<span>{results.playlists.length}</span>
+                単元<span>{results.playlists.length}</span>
               </h2>
               <div className="playlist-list">
                 {results.playlists.map((list, i) => (
@@ -990,154 +555,17 @@ function SearchPage({
                 ))}
               </div>
             </section>
+          )}{" "}
+          {results.topics.length > 0 && (
+            <section className="search-result-section">
+              <h2>
+                数学教材<span>{results.topics.length}</span>
+              </h2>
+              <TopicRows list={results.topics} learning={learning} />
+            </section>
           )}
         </>
       )}
-    </>
-  );
-}
-
-function ReviewPage({ learning }: { learning: LearningStore }) {
-  const [tab, setTab] = useState("review");
-  const review = topics.filter((t) => learning.get(`topic:${t.id}`).review);
-  const learned = topics.filter(
-    (t) => learning.get(`topic:${t.id}`).status !== "unstarted",
-  );
-  const notes = topics.filter((t) => learning.get(`topic:${t.id}`).note.trim());
-  const list = tab === "review" ? review : tab === "history" ? learned : notes;
-  return (
-    <>
-      <PageTitle
-        eyebrow="REFLECT & REMEMBER"
-        title="もう一度が、理解を深める。"
-        description="気になったテーマと、自分の言葉で残したメモを振り返ろう。"
-        action={
-          <button className="button secondary" onClick={learning.exportRecords}>
-            <ArrowDownToLine size={17} />
-            記録を書き出す
-          </button>
-        }
-      />
-      <div className="review-summary">
-        <div>
-          <Bookmark size={21} />
-          <span>
-            復習待ち
-            <strong>
-              {review.length}
-              <small>テーマ</small>
-            </strong>
-          </span>
-        </div>
-        <div>
-          <CheckCircle2 size={21} />
-          <span>
-            学習済み
-            <strong>
-              {
-                topics.filter(
-                  (t) => learning.get(`topic:${t.id}`).status === "completed",
-                ).length
-              }
-              <small>テーマ</small>
-            </strong>
-          </span>
-        </div>
-        <div>
-          <BookOpen size={21} />
-          <span>
-            メモがある教材
-            <strong>
-              {notes.length}
-              <small>テーマ</small>
-            </strong>
-          </span>
-        </div>
-      </div>
-      <div className="review-panel">
-        <Tabs
-          items={[
-            { id: "review", label: `復習待ち ${review.length}` },
-            { id: "history", label: "学習記録" },
-            { id: "notes", label: "学習メモ" },
-          ]}
-          active={tab}
-          onChange={setTab}
-          label="学習記録の種類"
-        >
-          {list.length ? (
-            <div className="review-list">
-              {list.map((t) => {
-                const r = learning.get(`topic:${t.id}`);
-                return (
-                  <article className="review-item" key={t.id}>
-                    <div>
-                      <span className="topic-meta">数学Ⅰ / 二次関数</span>
-                      <a href={`#/material/${t.id}`}>
-                        <h2>{t.title}</h2>
-                      </a>
-                      <div className="review-item-tags">
-                        <span className={`status-tag ${r.status}`}>
-                          {statusLabels[r.status]}
-                        </span>
-                        <span className="tag plain">
-                          {understandingLabels[r.understanding]}
-                        </span>
-                        <span className="muted-text">
-                          {new Date(r.updatedAt).toLocaleDateString("ja-JP")}
-                        </span>
-                      </div>
-                      {tab === "notes" && (
-                        <p className="note-preview">{r.note}</p>
-                      )}
-                    </div>
-                    <a
-                      className="button secondary small"
-                      href={`#/material/${t.id}`}
-                    >
-                      教材を開く
-                      <ArrowRight size={15} />
-                    </a>
-                  </article>
-                );
-              })}
-            </div>
-          ) : (
-            <Empty
-              title={
-                tab === "review"
-                  ? "復習リストは、まだ空です"
-                  : tab === "history"
-                    ? "これから、学びを積み重ねよう"
-                    : "自分の言葉を残してみよう"
-              }
-              description={
-                tab === "review"
-                  ? "動画や教材のブックマークから登録できます。「要復習」を選んだテーマもここに入ります。"
-                  : tab === "history"
-                    ? "テーマを開くと、学習中の記録がここに表示されます。"
-                    : "動画や教材で書いたメモが、ここにまとまります。"
-              }
-              icon={
-                tab === "review" ? (
-                  <Bookmark size={27} />
-                ) : (
-                  <BookOpen size={27} />
-                )
-              }
-            >
-              <a href="#/library?subject=I" className="button primary small">
-                学習をはじめる
-                <ArrowRight size={15} />
-              </a>
-            </Empty>
-          )}
-        </Tabs>
-      </div>
-      <p className="record-footnote">
-        <Laptop size={15} />
-        記録はこのブラウザに保存します。別の端末への同期はまだありません。
-      </p>
     </>
   );
 }
@@ -1248,8 +676,8 @@ export function App() {
       if (noticeTimer.current) clearTimeout(noticeTimer.current);
     };
   }, []);
-  const reviews = topics.filter(
-    (t) => learning.get(`topic:${t.id}`).review,
+  const reviews = learningEntries(learning.records).filter(
+    (entry) => entry.record.review,
   ).length;
   const activeNav = navId(route.page);
   const topic = getTopic(route.id);
@@ -1282,6 +710,11 @@ export function App() {
         playlist={playlist}
         mode={route.query.get("mode") === "official" ? "official" : "current"}
         learning={learning}
+        filter={
+          route.query.get("state") && route.query.get("state")! in statusLabels
+            ? (route.query.get("state") as keyof typeof statusLabels)
+            : "all"
+        }
       />
     );
   else if (route.page === "video" && selectedVideo)
@@ -1307,7 +740,8 @@ export function App() {
     );
   else if (route.page === "search")
     page = <SearchPage route={route} learning={learning} />;
-  else if (route.page === "review") page = <ReviewPage learning={learning} />;
+  else if (route.page === "review")
+    page = <ReviewPage learning={learning} route={route} />;
   else if (route.page === "about") page = <AboutPage learning={learning} />;
   else
     page = (

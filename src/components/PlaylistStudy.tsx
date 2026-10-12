@@ -1,14 +1,12 @@
-import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  ChevronRight,
-  Play,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Play } from "lucide-react";
 import { officialPlaylists } from "../data/playlists";
 import type { OfficialPlaylist } from "../data/playlists";
-import { subjects, QUADRATIC_PLAYLIST, topics } from "../data/catalog";
+import { subjects } from "../data/catalog";
 import { unitVideos } from "../data/video-library";
+import { unitMaterials, videoProgress } from "../domain/library";
+import { statusLabels } from "../domain/types";
+import type { LearningStatus } from "../domain/types";
+import { RelatedMaterials } from "./RelatedMaterials";
 import { lessonPresentations, lessonLabel } from "../domain/video-title";
 import type { LearningStore } from "../hooks/useLearning";
 
@@ -17,15 +15,24 @@ export function PlaylistStudy({
   playlist,
   mode,
   learning,
+  filter = "all",
 }: {
   playlist: OfficialPlaylist;
   mode: "current" | "official";
   learning: LearningStore;
+  filter?: LearningStatus | "all";
 }) {
   const subjectId = mode === "official" ? playlist.original : playlist.current;
   const subject = subjects.find((s) => s.id === subjectId)!;
   const videos = unitVideos(playlist.id);
   const presentations = lessonPresentations(videos);
+  const progress = videoProgress(videos, learning.records);
+  const visibleLessons = videos
+    .map((video, index) => ({ video, index }))
+    .filter(
+      ({ video }) =>
+        filter === "all" || learning.get(`video:${video.id}`).status === filter,
+    );
   const units = officialPlaylists.filter(
     (p) => (mode === "official" ? p.original : p.current) === subjectId,
   );
@@ -54,11 +61,36 @@ export function PlaylistStudy({
           <ArrowRight size={17} />
         </a>
       </div>
+      <div className="unit-list-controls">
+        <span>
+          {learning.ready
+            ? `動画の学習済み ${progress.completed} / ${progress.total}本`
+            : "学習記録を読み込み中"}
+        </span>
+        <label>
+          <span className="sr-only">動画の学習状態</span>
+          <select
+            aria-label="動画の学習状態"
+            value={filter}
+            disabled={!learning.ready}
+            onChange={(e) => {
+              window.location.hash = `/unit/${playlist.id}?mode=${mode}&state=${e.target.value}`;
+            }}
+          >
+            <option value="all">すべての学習状態</option>
+            {Object.entries(statusLabels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <div className="unit-library-layout">
         <section aria-label={`${playlist.title}の動画一覧`}>
-          {videos.length ? (
+          {visibleLessons.length ? (
             <ol className="lesson-list">
-              {videos.map((video, i) => {
+              {visibleLessons.map(({ video, index: i }) => {
                 const record = learning.get(`video:${video.id}`);
                 const state =
                   record.status === "completed"
@@ -98,25 +130,10 @@ export function PlaylistStudy({
             </ol>
           ) : (
             <p className="quiet-empty">
-              この単元の動画はまだ登録されていません。
+              条件に合う授業はありません。学習状態を「すべて」にすると全授業を表示できます。
             </p>
           )}
-          {playlist.id === QUADRATIC_PLAYLIST && (
-            <section className="playlist-material-note">
-              <BookOpen size={21} />
-              <div>
-                <h2>公式・解説・例題も読む</h2>
-                <div className="playlist-material-links">
-                  {topics.map((t) => (
-                    <a key={t.id} href={`#/material/${t.id}`}>
-                      {t.title}
-                      <ArrowRight size={14} />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </section>
-          )}
+          <RelatedMaterials topics={unitMaterials(playlist.id)} />
         </section>
         <aside className="playlist-unit-guide">
           <span className="eyebrow">SUBJECT GUIDE</span>

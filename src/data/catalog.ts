@@ -109,7 +109,7 @@ const manual = {
   playlistIds: [] as string[],
 };
 
-const representativeVideos: VideoRecord[] = [
+const manualVideos: VideoRecord[] = [
   {
     ...manual,
     id: "P84CrKaIob0",
@@ -119,6 +119,7 @@ const representativeVideos: VideoRecord[] = [
   {
     ...manual,
     id: "ssuKwW6MBvo",
+    supplementalCategory: "supplement",
     title:
       "【センター秒殺】超使える！平方完成の裏技！２次関数の頂点の座標を最速で求める！～超わかる！高校数学",
     thumbnail: "https://i.ytimg.com/vi/ssuKwW6MBvo/hqdefault.jpg",
@@ -126,6 +127,8 @@ const representativeVideos: VideoRecord[] = [
   {
     ...manual,
     id: "jTx2zwMW6Ho",
+    currentSubjects: ["special", "I"],
+    supplementalCategory: "exam",
     title:
       "【２次関数】センター試験(数学Ⅰ・A)【徹底解説！】(2017年)～【超わかる！高校数学】",
     thumbnail: "https://i.ytimg.com/vi/jTx2zwMW6Ho/hqdefault.jpg",
@@ -134,7 +137,12 @@ const representativeVideos: VideoRecord[] = [
 
 export const videos: VideoRecord[] = Array.from(
   new Map(
-    [...representativeVideos, ...registeredVideos].map((v) => [v.id, v]),
+    [
+      ...registeredVideos,
+      ...manualVideos.filter(
+        (v) => !registeredVideos.some((r) => r.id === v.id),
+      ),
+    ].map((v) => [v.id, v]),
   ).values(),
 );
 
@@ -143,6 +151,7 @@ export const topics: Topic[] = [
     id: "completing-square",
     subject: "I",
     unit: "二次関数",
+    unitIds: [QUADRATIC_PLAYLIST],
     order: 1,
     title: "平方完成",
     subtitle: "式の形を変えると、グラフが見えてくる。",
@@ -238,6 +247,7 @@ export const topics: Topic[] = [
     id: "vertex-and-graph",
     subject: "I",
     unit: "二次関数",
+    unitIds: [QUADRATIC_PLAYLIST],
     order: 2,
     title: "軸・頂点とグラフ",
     subtitle: "ひとつの式から、放物線の位置を読む。",
@@ -330,6 +340,7 @@ export const topics: Topic[] = [
     id: "maximum-minimum",
     subject: "I",
     unit: "二次関数",
+    unitIds: [QUADRATIC_PLAYLIST],
     order: 3,
     title: "最大値・最小値",
     subtitle: "定義域を確かめると、答えが決まる。",
