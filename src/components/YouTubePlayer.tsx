@@ -4,9 +4,9 @@ import type { LearningStore } from "../hooks/useLearning";
 import type { VideoRecord } from "../domain/types";
 import { VideoThumbnail } from "./VideoThumbnail";
 import { PlayerControls, initialPlayback } from "./PlayerControls";
-import type { PlaybackSnapshot } from "./PlayerControls";
+import type { PlaybackSnapshot, CaptionControlState } from "./PlayerControls";
 import { applyCaptions, readCaptions } from "../domain/player-captions";
-import type { CaptionPlayer, CaptionSnapshot } from "../domain/player-captions";
+import type { CaptionPlayer } from "../domain/player-captions";
 
 interface Player extends CaptionPlayer {
   destroy(): void;
@@ -87,7 +87,7 @@ export function YouTubePlayer({
   const desiredSeek = useRef(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [captions, setCaptions] = useState<CaptionSnapshot>({
+  const [captions, setCaptions] = useState<CaptionControlState>({
     state: "loading",
     canToggle: false,
   });
@@ -169,8 +169,34 @@ export function YouTubePlayer({
     let lastPosition = -1;
     let lastSavedAt = 0;
     let captionTimer: ReturnType<typeof setTimeout> | null = null;
+    let captionQueued = false;
+    const watchCaptionRequest = () => {
+      if (captionTimer) clearTimeout(captionTimer);
+      const enabled = captionsDesired.current;
+      captionTimer = setTimeout(() => {
+        captionTimer = null;
+        if (disposed || !player) return;
+        const actual = readCaptions(player);
+        if (actual.state !== (enabled ? "on" : "off")) {
+          captionsDesired.current = false;
+          applyCaptions(player, false);
+          setControlNotice(
+            "字幕の設定を確認できませんでした。接続を確認してもう一度お試しください。",
+          );
+        }
+        syncCaptions();
+      }, 6000);
+    };
     const syncCaptions = (apply = false) => {
       if (disposed || !playerReady || !player) return;
+      if (captionQueued) {
+        setCaptions((previous) =>
+          previous.state === "queued"
+            ? previous
+            : { state: "queued", canToggle: true },
+        );
+        return;
+      }
       let result: ReturnType<typeof applyCaptions> | null = null;
       if (apply) result = applyCaptions(player, captionsDesired.current);
       const snapshot = readCaptions(player);
@@ -313,19 +339,18 @@ export function YouTubePlayer({
                 captionsDesired.current = enabled;
                 setControlNotice("");
                 if (captionTimer) clearTimeout(captionTimer);
-                captionTimer = setTimeout(() => {
-                  captionTimer = null;
-                  if (disposed || !player) return;
-                  const actual = readCaptions(player);
-                  if (actual.state !== (enabled ? "on" : "off")) {
-                    captionsDesired.current = false;
-                    applyCaptions(player, false);
-                    setControlNotice(
-                      "字幕の設定を確認できませんでした。接続を確認してもう一度お試しください。",
-                    );
-                  }
+                captionTimer = null;
+                captionQueued =
+                  enabled &&
+                  Boolean(player && [-1, 5].includes(player.getPlayerState()));
+                if (captionQueued) {
+                  setControlNotice(
+                    "再生を開始すると字幕をオンにします。もう一度押すと取り消せます。",
+                  );
                   syncCaptions();
-                }, 6000);
+                  return;
+                }
+                watchCaptionRequest();
                 syncCaptions(true);
               };
               syncCaptions(true);
@@ -357,6 +382,11 @@ export function YouTubePlayer({
               if (event.data === 1) hasPlaybackStarted = true;
               if (event.data === 0) persist(true);
               if (event.data === 2) persist();
+              if (captionQueued && [1, 3].includes(event.data)) {
+                captionQueued = false;
+                watchCaptionRequest();
+                setControlNotice("");
+              }
               if (event.data === 1) setControlNotice("");
               syncControls();
               syncCaptions(true);
@@ -524,9 +554,8 @@ export function YouTubePlayer({
           status={
             state === "loading"
               ? "プレーヤーを読み込み中…"
-              : playback.state === 3
-                ? "動画を読み込み中…"
-                : controlNotice
+              : controlNotice ||
+                (playback.state === 3 ? "動画を読み込み中…" : "")
           }
           seekPreview={seekPreview}
           onToggle={togglePlayback}
@@ -543,7 +572,7 @@ export function YouTubePlayer({
           onRate={changeRate}
           onVolume={changeVolume}
           onMute={toggleMute}
-          onCaptions={() => captionCommand.current?.(captions.state !== "on")}
+          onCaptions={() => captionCommand.current?.(!captionsDesired.current)}
           onFullscreen={() => void toggleFullscreen()}
         />
       )}

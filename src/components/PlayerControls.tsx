@@ -11,6 +11,11 @@ import {
 } from "lucide-react";
 import type { CaptionSnapshot } from "../domain/player-captions";
 
+export interface CaptionControlState {
+  state: CaptionSnapshot["state"] | "queued";
+  canToggle: boolean;
+}
+
 export interface PlaybackSnapshot {
   time: number;
   duration: number;
@@ -60,7 +65,7 @@ export function PlayerControls({
   ready: boolean;
   offline: boolean;
   fullscreen: boolean;
-  captions: CaptionSnapshot;
+  captions: CaptionControlState;
   status: string;
   seekPreview: number | null;
   onToggle: () => void;
@@ -174,8 +179,8 @@ export function PlayerControls({
                 : undefined
           }
           title={
-            playback.state === -1 || playback.state === 5
-              ? "字幕は再生開始後に切り替えられます"
+            captions.state === "queued"
+              ? "再生時に字幕をオンにします。もう一度押すと取り消せます"
               : captions.state === "on"
                 ? "字幕をオフにする"
                 : captions.state === "off"
@@ -184,12 +189,7 @@ export function PlayerControls({
                     ? "字幕操作に対応していません"
                     : "字幕の状態を確認中"
           }
-          disabled={
-            !ready ||
-            !captions.canToggle ||
-            playback.state === -1 ||
-            playback.state === 5
-          }
+          disabled={!ready || !captions.canToggle}
           onClick={onCaptions}
         >
           <Captions size={19} />
@@ -198,7 +198,9 @@ export function PlayerControls({
               ? "字幕オフ"
               : captions.state === "on"
                 ? "字幕オン"
-                : "字幕"}
+                : captions.state === "queued"
+                  ? "字幕待機"
+                  : "字幕"}
           </span>
         </button>
         <div className="media-speed-group">
@@ -231,8 +233,8 @@ export function PlayerControls({
         <button
           type="button"
           className="media-button media-fullscreen-button"
-          aria-label={fullscreen ? "通常表示に戻す" : "動画だけを表示"}
-          title={fullscreen ? "通常表示に戻す（Esc）" : "動画だけを表示"}
+          aria-label={fullscreen ? "通常表示に戻す" : "動画を大きく表示"}
+          title={fullscreen ? "通常表示に戻す（Esc）" : "動画を大きく表示"}
           onClick={onFullscreen}
         >
           {fullscreen ? <Minimize size={19} /> : <Maximize size={19} />}
