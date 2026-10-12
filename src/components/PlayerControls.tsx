@@ -7,7 +7,9 @@ import {
   RotateCw,
   Volume2,
   VolumeX,
+  Captions,
 } from "lucide-react";
+import type { CaptionSnapshot } from "../domain/player-captions";
 
 export interface PlaybackSnapshot {
   time: number;
@@ -40,7 +42,7 @@ export function PlayerControls({
   ready,
   offline,
   fullscreen,
-  fullscreenAvailable,
+  captions,
   status,
   seekPreview,
   onToggle,
@@ -51,13 +53,14 @@ export function PlayerControls({
   onRate,
   onVolume,
   onMute,
+  onCaptions,
   onFullscreen,
 }: {
   playback: PlaybackSnapshot;
   ready: boolean;
   offline: boolean;
   fullscreen: boolean;
-  fullscreenAvailable: boolean;
+  captions: CaptionSnapshot;
   status: string;
   seekPreview: number | null;
   onToggle: () => void;
@@ -68,6 +71,7 @@ export function PlayerControls({
   onRate: (rate: number) => void;
   onVolume: (volume: number) => void;
   onMute: () => void;
+  onCaptions: () => void;
   onFullscreen: () => void;
 }) {
   const playing = playback.state === 1 || playback.state === 3;
@@ -158,6 +162,38 @@ export function PlayerControls({
             onChange={(event) => onVolume(Number(event.target.value))}
           />
         </div>
+        <button
+          type="button"
+          className={`media-caption-button${captions.state === "on" ? " active" : ""}`}
+          aria-label="字幕"
+          aria-pressed={
+            captions.state === "on"
+              ? true
+              : captions.state === "off"
+                ? false
+                : undefined
+          }
+          title={
+            captions.state === "on"
+              ? "字幕をオフにする"
+              : captions.state === "off"
+                ? "字幕をオンにする"
+                : captions.state === "unavailable"
+                  ? "字幕操作に対応していません"
+                  : "字幕の状態を確認中"
+          }
+          disabled={!ready || !captions.canToggle}
+          onClick={onCaptions}
+        >
+          <Captions size={19} />
+          <span>
+            {captions.state === "off"
+              ? "字幕オフ"
+              : captions.state === "on"
+                ? "字幕オン"
+                : "字幕"}
+          </span>
+        </button>
         <div className="media-speed-group">
           <label className="media-speed-select">
             <span className="sr-only">再生速度</span>
@@ -188,9 +224,8 @@ export function PlayerControls({
         <button
           type="button"
           className="media-button media-fullscreen-button"
-          aria-label={fullscreen ? "全画面を終了" : "動画を全画面で表示"}
-          title={fullscreen ? "全画面を終了" : "全画面"}
-          disabled={!fullscreenAvailable}
+          aria-label={fullscreen ? "通常表示に戻す" : "動画だけを表示"}
+          title={fullscreen ? "通常表示に戻す（Esc）" : "動画だけを表示"}
           onClick={onFullscreen}
         >
           {fullscreen ? <Minimize size={19} /> : <Maximize size={19} />}

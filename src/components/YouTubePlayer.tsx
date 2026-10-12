@@ -5,8 +5,10 @@ import type { VideoRecord } from "../domain/types";
 import { VideoThumbnail } from "./VideoThumbnail";
 import { PlayerControls, initialPlayback } from "./PlayerControls";
 import type { PlaybackSnapshot } from "./PlayerControls";
+import { applyCaptions, readCaptions } from "../domain/player-captions";
+import type { CaptionPlayer, CaptionSnapshot } from "../domain/player-captions";
 
-interface Player {
+interface Player extends CaptionPlayer {
   destroy(): void;
   getCurrentTime(): number;
   getDuration(): number;
@@ -84,6 +86,13 @@ export function YouTubePlayer({
   const seeking = useRef(false);
   const desiredSeek = useRef(0);
   const [fullscreen, setFullscreen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [captions, setCaptions] = useState<CaptionSnapshot>({
+    state: "loading",
+    canToggle: false,
+  });
+  const captionsDesired = useRef(false);
+  const captionCommand = useRef<((enabled: boolean) => void) | null>(null);
   const [controlNotice, setControlNotice] = useState("");
   const lastVolume = useRef(100);
   const [started, setStarted] = useState(autoLoad);
@@ -120,12 +129,80 @@ export function YouTubePlayer({
   }, []);
 
   useEffect(() => {
+    if (!expanded || !root.current) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const siblings: Array<{ element: HTMLElement; inert: boolean }> = [];
+    let node: HTMLElement | null = root.current;
+    while (node && node !== document.body) {
+      const parent: HTMLElement | null = node.parentElement;
+      if (!parent) break;
+      for (const sibling of parent.children) {
+        if (sibling !== node && sibling instanceof HTMLElement) {
+          siblings.push({ element: sibling, inert: sibling.inert });
+          sibling.inert = true;
+        }
+      }
+      node = parent;
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      siblings.forEach(({ element, inert }) => {
+        element.inert = inert;
+      });
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [expanded]);
+
+  useEffect(() => {
     if (!started || !container.current) return;
     let disposed = false;
     let player: Player | null = null;
     let timer: ReturnType<typeof setInterval> | null = null;
     let lastPosition = -1;
     let lastSavedAt = 0;
+    let captionTimer: ReturnType<typeof setTimeout> | null = null;
+    const syncCaptions = (apply = false) => {
+      if (disposed || !playerReady || !player) return;
+      let result: ReturnType<typeof applyCaptions> | null = null;
+      if (apply) result = applyCaptions(player, captionsDesired.current);
+      const snapshot = readCaptions(player);
+      if (result === "no-tracks" || result === "unavailable") {
+        if (captionsDesired.current) {
+          captionsDesired.current = false;
+          applyCaptions(player, false);
+          setControlNotice(
+            result === "no-tracks"
+              ? "この動画の字幕が見つかりませんでした。"
+              : "このプレーヤーでは字幕を切り替えられませんでした。",
+          );
+        }
+      }
+      const matches =
+        snapshot.state === (captionsDesired.current ? "on" : "off");
+      if (matches && captionTimer) {
+        clearTimeout(captionTimer);
+        captionTimer = null;
+      }
+      const next =
+        result === "unavailable"
+          ? { state: "unavailable" as const, canToggle: false }
+          : !matches && snapshot.state !== "unavailable"
+            ? { state: "loading" as const, canToggle: false }
+            : snapshot;
+      setCaptions((previous) =>
+        previous.state === next.state && previous.canToggle === next.canToggle
+          ? previous
+          : next,
+      );
+    };
     const syncControls = () => {
       if (disposed || !playerReady || !player) return;
       const rates = player.getAvailablePlaybackRates();
@@ -188,6 +265,8 @@ export function YouTubePlayer({
     setControlNotice("");
     setPlayback(initialPlayback);
     setSeekPreview(null);
+    setCaptions({ state: "loading", canToggle: false });
+    captionsDesired.current = false;
     seeking.current = false;
     loadPlayerApi()
       .then((api) => {
@@ -206,6 +285,8 @@ export function YouTubePlayer({
           origin: window.location.origin,
           rel: "0",
           hl: "ja",
+          cc_load_policy: "0",
+          cc_lang_pref: "ja",
           iv_load_policy: "3",
         });
         target.src = `https://www.youtube.com/embed/${video.id}?${params}`;
@@ -228,6 +309,26 @@ export function YouTubePlayer({
               playerRef.current = player;
               if (readinessTimer) clearTimeout(readinessTimer);
               setState("ready");
+              captionCommand.current = (enabled) => {
+                captionsDesired.current = enabled;
+                setControlNotice("");
+                if (captionTimer) clearTimeout(captionTimer);
+                captionTimer = setTimeout(() => {
+                  captionTimer = null;
+                  if (disposed || !player) return;
+                  const actual = readCaptions(player);
+                  if (actual.state !== (enabled ? "on" : "off")) {
+                    captionsDesired.current = false;
+                    applyCaptions(player, false);
+                    setControlNotice(
+                      "字幕の設定を確認できませんでした。接続を確認してもう一度お試しください。",
+                    );
+                  }
+                  syncCaptions();
+                }, 6000);
+                syncCaptions(true);
+              };
+              syncCaptions(true);
               if (position.current > 0 && !recordRef.current.playbackEnded)
                 player.seekTo(position.current, true);
               const iframe = container.current?.querySelector("iframe");
@@ -241,6 +342,7 @@ export function YouTubePlayer({
               syncControls();
               timer = setInterval(() => {
                 syncControls();
+                syncCaptions();
                 if (
                   player?.getPlayerState() === 1 &&
                   Date.now() - lastSavedAt >= 2000
@@ -257,7 +359,9 @@ export function YouTubePlayer({
               if (event.data === 2) persist();
               if (event.data === 1) setControlNotice("");
               syncControls();
+              syncCaptions();
             },
+            onApiChange: () => syncCaptions(true),
             onPlaybackRateChange: () => {
               if (!disposed) syncControls();
             },
@@ -293,8 +397,10 @@ export function YouTubePlayer({
       disposed = true;
       if (timer) clearInterval(timer);
       if (readinessTimer) clearTimeout(readinessTimer);
+      if (captionTimer) clearTimeout(captionTimer);
       document.removeEventListener("visibilitychange", onVisibility);
       playerRef.current = null;
+      captionCommand.current = null;
       if (player) {
         persist();
         player.destroy();
@@ -354,17 +460,27 @@ export function YouTubePlayer({
     setPlayback((previous) => ({ ...previous, muted: !unmute, volume }));
   };
   const toggleFullscreen = async () => {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
     try {
       if (document.fullscreenElement === root.current)
         await document.exitFullscreen();
-      else await root.current?.requestFullscreen();
+      else if (document.fullscreenEnabled && root.current?.requestFullscreen)
+        await root.current.requestFullscreen();
+      else setExpanded(true);
     } catch {
-      setControlNotice("このブラウザでは全画面表示を開始できませんでした。");
+      // In-page expansion also works when browser fullscreen is unavailable.
+      setExpanded(true);
     }
   };
 
   return (
-    <div className="youtube-block mathveo-player" ref={root}>
+    <div
+      className={`youtube-block mathveo-player${expanded ? " player-expanded" : ""}`}
+      ref={root}
+    >
       {!started ? (
         <button
           className="video-cover"
@@ -403,8 +519,8 @@ export function YouTubePlayer({
           playback={playback}
           ready={state === "ready"}
           offline={offline}
-          fullscreen={fullscreen}
-          fullscreenAvailable={Boolean(document.fullscreenEnabled)}
+          fullscreen={fullscreen || expanded}
+          captions={captions}
           status={
             state === "loading"
               ? "プレーヤーを読み込み中…"
@@ -427,6 +543,7 @@ export function YouTubePlayer({
           onRate={changeRate}
           onVolume={changeVolume}
           onMute={toggleMute}
+          onCaptions={() => captionCommand.current?.(captions.state !== "on")}
           onFullscreen={() => void toggleFullscreen()}
         />
       )}

@@ -2648,12 +2648,31 @@ main:focus {
   background: var(--surface);
   color: var(--primary);
 }
+.media-caption-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: transparent;
+  color: #445777;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.media-caption-button:hover:not(:disabled),
+.media-caption-button.active {
+  background: var(--surface);
+  color: var(--primary);
+}
 .media-status {
   margin: 8px 0 0;
   font-size: 0.71rem;
   color: var(--muted);
 }
-.mathveo-player:fullscreen {
+.mathveo-player:fullscreen,
+.mathveo-player.player-expanded {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -2662,13 +2681,21 @@ main:focus {
   border-radius: 0;
   background: #142038;
 }
-.mathveo-player:fullscreen .player-wrapper {
+.mathveo-player.player-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  height: 100dvh;
+}
+.mathveo-player:fullscreen .player-wrapper,
+.mathveo-player.player-expanded .player-wrapper {
   flex: 1;
   aspect-ratio: auto;
   min-height: 200px;
   background: #142038;
 }
-.mathveo-player:fullscreen .media-controls {
+.mathveo-player:fullscreen .media-controls,
+.mathveo-player.player-expanded .media-controls {
   flex: 0 0 auto;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
