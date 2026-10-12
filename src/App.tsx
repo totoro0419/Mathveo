@@ -775,7 +775,7 @@ export function App() {
       </a>
       <aside className="sidebar">
         <a className="brand" href="#/home" aria-label="Mathveo ホーム">
-          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" />
+          <img src={`${import.meta.env.BASE_URL}icon-192.png?v=mathveo-f-original`} alt="" />
           <span>
             Mathveo<span className="brand-dot">.</span>
           </span>
@@ -834,7 +834,7 @@ export function App() {
         <header className="topbar">
           <div className="mobile-brand">
             <a className="brand" href="#/home">
-              <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" />
+              <img src={`${import.meta.env.BASE_URL}icon-192.png?v=mathveo-f-original`} alt="" />
               <span>
                 Mathveo<span className="brand-dot">.</span>
               </span>

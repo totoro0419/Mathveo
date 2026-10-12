@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
-"""Render Mathveo's approved SVG emblem to PWA PNG sizes.
-
-Run: python scripts/render-icons.py
-Requires: CairoSVG 2.7.1
-"""
+"""Rebuild Mathveo icons from the approved F image, not a vector approximation."""
 from pathlib import Path
-import cairosvg
+from io import BytesIO
+from base64 import b64decode
+from re import search
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-source = ROOT / "public" / "icon.svg"
-for size in (192, 512):
-    dest = ROOT / "public" / f"icon-{size}.png"
-    cairosvg.svg2png(url=str(source), write_to=str(dest), output_width=size, output_height=size)
-    print(f"Wrote {dest.relative_to(ROOT)} ({size}x{size})")
+source = (ROOT / "public/icon.svg").read_text(encoding="utf-8")
+match = search(r'href="data:image/webp;base64,([A-Za-z0-9+/=]+)"', source)
+if not match:
+    raise RuntimeError("Approved F artwork missing from public/icon.svg")
+with Image.open(BytesIO(b64decode(match.group(1), validate=True))) as img:
+    original = img.convert("RGB")
+    if original.width != original.height:
+        raise RuntimeError("Expected square F artwork")
+    for size in (192, 512):
+        path = ROOT / "public" / f"icon-{size}.png"
+        original.resize((size, size), Image.Resampling.LANCZOS).save(path, optimize=True)
+        print(f"Regenerated {path.name}: {size}x{size}")
