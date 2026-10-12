@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface Route {
   page: string;
@@ -16,9 +16,23 @@ function currentRoute(): Route {
 
 export function useRoute() {
   const [route, setRoute] = useState(currentRoute);
+  const previousRoute = useRef(route);
   useEffect(() => {
     const handle = () => {
-      setRoute(currentRoute());
+      const next = currentRoute();
+      const previous = previousRoute.current;
+      const localChange =
+        previous.page === next.page &&
+        previous.id === next.id &&
+        (next.page === "review" ||
+          next.page === "unit" ||
+          next.page === "playlist" ||
+          (next.page === "library" &&
+            previous.query.get("subject") === next.query.get("subject")));
+      previousRoute.current = next;
+      setRoute(next);
+      // Local tabs and filters retain their keyboard focus and scroll context.
+      if (localChange) return;
       window.scrollTo({ top: 0 });
       requestAnimationFrame(() =>
         document
