@@ -2,6 +2,16 @@
 
 2026-10-11 UTC（日本時間2026-10-12）。M01の主要4画面と代表単元の実装を提出します。以下は実装したことと確認できたことを分けた記録です。動画の実再生に未確認事項があるため、M01の全合格基準を無条件に満たしたという宣言はしません。
 
+## GitHub Pagesの公開確認（2026-10-12）
+
+公開URL：[https://totoro0419.github.io/Mathveo/](https://totoro0419.github.io/Mathveo/)。
+
+mainのコミット `b3adf343bc57db135c789299758d4fff115717d3` に公開用ワークフローを追加。[GitHub Actionsの実行](https://github.com/totoro0419/Mathveo/actions/runs/38191579771)でbuildとdeployの成功を確認しました（全体39秒、build 22秒、deploy 9秒）。
+
+実際のGitHub Pages URLをChromeで開き、ホーム、ライブラリ、動画視聴画面、平方完成の教材への遷移を確認しました。教材URLの再読み込みも正常に表示されました。動画視聴画面の関連教材でKaTeXの数式2件、数式エラー0件、確認したPC幅でページの横はみ出しなしを確認しました。テーマを開いた学習中の記録はホームに戻った後も表示されました。
+
+公開URLで撮影した画像：[github-pages-home.jpg](screenshots/github-pages-home.jpg)。動画の実映像再生・途中位置からの再開は、この公開作業で新たに確認していません。以下の未確認事項は引き続き区別します。
+
 ## 自動検査
 
 | 検査              | 結果                  | 実際の範囲                                                                           |
