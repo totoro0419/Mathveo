@@ -359,7 +359,7 @@ export function YouTubePlayer({
               if (event.data === 2) persist();
               if (event.data === 1) setControlNotice("");
               syncControls();
-              syncCaptions();
+              syncCaptions(true);
             },
             onApiChange: () => syncCaptions(true),
             onPlaybackRateChange: () => {

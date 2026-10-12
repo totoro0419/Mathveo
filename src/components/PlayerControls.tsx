@@ -174,15 +174,22 @@ export function PlayerControls({
                 : undefined
           }
           title={
-            captions.state === "on"
-              ? "字幕をオフにする"
-              : captions.state === "off"
-                ? "字幕をオンにする"
-                : captions.state === "unavailable"
-                  ? "字幕操作に対応していません"
-                  : "字幕の状態を確認中"
+            playback.state === -1 || playback.state === 5
+              ? "字幕は再生開始後に切り替えられます"
+              : captions.state === "on"
+                ? "字幕をオフにする"
+                : captions.state === "off"
+                  ? "字幕をオンにする"
+                  : captions.state === "unavailable"
+                    ? "字幕操作に対応していません"
+                    : "字幕の状態を確認中"
           }
-          disabled={!ready || !captions.canToggle}
+          disabled={
+            !ready ||
+            !captions.canToggle ||
+            playback.state === -1 ||
+            playback.state === 5
+          }
           onClick={onCaptions}
         >
           <Captions size={19} />

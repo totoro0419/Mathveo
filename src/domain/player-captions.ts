@@ -39,8 +39,11 @@ export function readCaptions(player: CaptionPlayer): CaptionSnapshot {
     if (!Array.isArray(options) || !options.includes("track"))
       return { state: "unavailable", canToggle: false };
     const track = player.getOption("captions", "track");
-    if (!track || typeof track !== "object")
-      return { state: "loading", canToggle: false };
+    // The SDK returns null/undefined when no caption track is selected,
+    // including after unloading a previously registered captions module.
+    if (track == null) return { state: "off", canToggle: moduleControl };
+    if (typeof track !== "object")
+      return { state: "unavailable", canToggle: false };
     return {
       state: isTrack(track) ? "on" : "off",
       canToggle:
