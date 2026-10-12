@@ -2016,6 +2016,161 @@ main:focus {
   display: none;
 }
 
+/* Official playlists: one player, with a stable subject-level unit guide. */
+.playlist-study-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 290px);
+  gap: 28px;
+  align-items: start;
+}
+.playlist-study-main {
+  min-width: 0;
+}
+.playlist-player-footer {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.playlist-reload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 6px 8px;
+  color: #557eb5;
+  font-size: 0.68rem;
+  border-radius: 7px;
+}
+.playlist-reload:hover {
+  background: var(--surface);
+}
+.playlist-study-description {
+  padding: 24px 4px;
+}
+.playlist-source-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.77rem;
+  color: var(--navy);
+}
+.playlist-study-description > p {
+  font-size: 0.81rem;
+  line-height: 1.9;
+  color: #627b9d;
+  margin-top: 14px;
+}
+.playlist-classification span {
+  padding: 0 8px;
+}
+.playlist-study-description .subtle-link {
+  margin-top: 14px;
+}
+.playlist-material-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-top: 1px solid var(--border);
+  padding: 25px 4px 8px;
+}
+.playlist-material-note > svg {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.playlist-material-note h2 {
+  font-size: 0.9rem;
+}
+.playlist-material-note p {
+  font-size: 0.8rem;
+  line-height: 1.9;
+  color: #627b9d;
+  margin-top: 9px;
+}
+.playlist-material-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 12px;
+}
+.playlist-material-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--primary);
+  font-size: 0.76rem;
+  min-height: 44px;
+}
+.playlist-record-note {
+  color: #71829d;
+  font-size: 0.69rem;
+  line-height: 1.8;
+  margin: 18px 4px 0;
+}
+.playlist-unit-guide {
+  padding: 24px 20px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: white;
+}
+.playlist-unit-guide h2 {
+  font-size: 1rem;
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+.playlist-unit-guide nav {
+  display: flex;
+  flex-direction: column;
+}
+.playlist-unit-guide nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 13px 10px;
+  border-radius: 8px;
+  font-size: 0.77rem;
+  line-height: 1.7;
+}
+.playlist-unit-guide nav a > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.playlist-unit-guide nav a > svg {
+  flex-shrink: 0;
+  color: #7b93b6;
+}
+.playlist-unit-guide nav a:hover {
+  background: #f3f7ff;
+}
+.playlist-unit-guide nav a.active {
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 600;
+}
+.playlist-unit-guide nav a.active > svg {
+  color: var(--primary);
+}
+@media (max-width: 1100px) {
+  .playlist-study-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+@media (max-width: 640px) {
+  .playlist-study .topic-heading {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .playlist-study .topic-heading .button {
+    font-size: 0.77rem;
+  }
+  .playlist-unit-guide {
+    padding: 22px 16px 12px;
+  }
+}
+
 /* Watch: real official player on the left, independently readable material on the right. */
 .watch-layout {
   display: grid;

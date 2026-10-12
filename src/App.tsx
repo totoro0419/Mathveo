@@ -53,6 +53,7 @@ import {
   CompleteButton,
 } from "./components/LearningControls";
 import { YouTubePlayer } from "./components/YouTubePlayer";
+import { PlaylistStudy } from "./components/PlaylistStudy";
 import { VideoThumbnail } from "./components/VideoThumbnail";
 
 const navItems = [
@@ -65,7 +66,7 @@ const navItems = [
 function navId(page: string) {
   return page === "material"
     ? "materials"
-    : page === "watch"
+    : page === "watch" || page === "playlist"
       ? "library"
       : page;
 }
@@ -431,13 +432,13 @@ function LibraryPage({
             </select>
           </label>
           <label>
-            <span className="sr-only">学習状態フィルタ</span>
+            <span className="sr-only">教材の学習状態</span>
             <select
-              aria-label="学習状態フィルタ"
+              aria-label="教材の学習状態"
               value={filter}
               onChange={(e) => update({ state: e.target.value })}
             >
-              <option value="all">すべての学習状態</option>
+              <option value="all">教材：すべての学習状態</option>
               {Object.entries(statusLabels).map(([id, label]) => (
                 <option key={id} value={id}>
                   {label}
@@ -449,10 +450,12 @@ function LibraryPage({
       </div>
       <div className="library-body">
         <section className="library-main">
-          <div className="section-heading">
-            <h2>利用できる教材</h2>
-            <span className="muted-text">{lessons.length}テーマ</span>
-          </div>
+          {(lessons.length > 0 || filter !== "all") && (
+            <div className="section-heading">
+              <h2>利用できる教材</h2>
+              <span className="muted-text">{lessons.length}テーマ</span>
+            </div>
+          )}
           {lessons.length ? (
             <>
               <div className="unit-heading">
@@ -465,52 +468,33 @@ function LibraryPage({
               </div>
               <TopicRows list={lessons} learning={learning} />
             </>
-          ) : (
+          ) : filter !== "all" ? (
             <Empty
-              title={
-                filter === "all"
-                  ? "この科目の教材は準備中です"
-                  : "条件に合う教材はありません"
-              }
-              description={
-                filter === "all"
-                  ? "現在は数学Ⅰ・二次関数の教材を利用できます。下の公式リンクから、この科目の授業動画を探せます。"
-                  : "学習状態のフィルタを変更してみてください。"
-              }
+              title="条件に合う教材はありません"
+              description="教材の学習状態フィルタを変更してみてください。授業動画は下の再生リストから視聴できます。"
             >
-              {filter !== "all" ? (
-                <button
-                  className="button secondary small"
-                  onClick={() => update({ state: "all" })}
-                >
-                  フィルタを解除
-                </button>
-              ) : (
-                <a className="button primary small" href="#/library?subject=I">
-                  二次関数の教材を見る
-                </a>
-              )}
+              <button
+                className="button secondary small"
+                onClick={() => update({ state: "all" })}
+              >
+                フィルタを解除
+              </button>
             </Empty>
-          )}
+          ) : null}
           <div className="section-heading official-heading">
             <div>
               <span className="eyebrow">OFFICIAL PLAYLISTS</span>
-              <h2>公式サイトの再生リスト</h2>
+              <h2>授業動画の再生リスト</h2>
             </div>
-            <span className="tag muted">リンク一覧</span>
+            <span className="tag blue">アプリ内で視聴</span>
           </div>
           <p className="section-description">
-            動画一覧の一括取得はまだ行っていません。各リンクはYouTubeの公式再生リストを開きます。
+            単元を選ぶと、アプリ内の公式プレーヤーで授業を視聴できます。動画の切り替えもプレーヤー内で行えます。
           </p>
           {lists.length ? (
             <div className="playlist-list">
               {lists.map((list, i) => (
-                <a
-                  key={list.id}
-                  href={`https://www.youtube.com/playlist?list=${list.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <a key={list.id} href={`#/playlist/${list.id}?mode=${mode}`}>
                   <span className="playlist-number">
                     {String(i + 1).padStart(2, "0")}
                   </span>
@@ -523,8 +507,8 @@ function LibraryPage({
                     </span>
                   </div>
                   <span className="external-label">
-                    YouTube
-                    <ExternalLink size={15} />
+                    視聴する
+                    <Play size={15} />
                   </span>
                 </a>
               ))}
@@ -797,13 +781,9 @@ function StudyPage({
             </div>
             <div className="section-heading">
               <h2>次の学びへ</h2>
-              <a
-                href={`https://www.youtube.com/playlist?list=${QUADRATIC_PLAYLIST}`}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={`#/playlist/${QUADRATIC_PLAYLIST}`}>
                 公式再生リスト
-                <ExternalLink size={14} />
+                <Play size={14} />
               </a>
             </div>
             <TopicRows
@@ -893,7 +873,10 @@ function SearchPage({
   useEffect(() => setValue(query), [query]);
   const results = searchCatalog(query);
   const count =
-    results.topics.length + results.videos.length + results.subjects.length;
+    results.topics.length +
+    results.videos.length +
+    results.subjects.length +
+    results.playlists.length;
   const search = (e: FormEvent) => {
     e.preventDefault();
     window.location.hash = `/search?q=${encodeURIComponent(value)}`;
@@ -903,7 +886,7 @@ function SearchPage({
       <PageTitle
         eyebrow="FIND YOUR NEXT STEP"
         title="知りたいことを、すぐに。"
-        description="動画・公式・解説・例題・科目名をまとめて検索します。"
+        description="動画・再生リスト・公式・解説・例題・科目名をまとめて検索します。"
       />
       <form className="search-page-form" onSubmit={search}>
         <Search size={21} />
@@ -921,7 +904,7 @@ function SearchPage({
         <>
           <div className="search-suggestions">
             <span>すぐに探す</span>
-            {["平方完成", "頂点", "最大値", "数学C"].map((q) => (
+            {["平方完成", "三角関数", "微分", "ベクトル"].map((q) => (
               <a href={`#/search?q=${encodeURIComponent(q)}`} key={q}>
                 {q}
               </a>
@@ -937,7 +920,7 @@ function SearchPage({
         <>
           <p className="result-count">
             「{query}」の検索結果：{count}件{" "}
-            <span>登録済みの動画・教材が対象</span>
+            <span>登録済みの動画・再生リスト・教材が対象</span>
           </p>
           {count === 0 && (
             <Empty
@@ -982,6 +965,33 @@ function SearchPage({
                     </a>
                   );
                 })}
+              </div>
+            </section>
+          )}
+          {results.playlists.length > 0 && (
+            <section className="search-result-section">
+              <h2>
+                単元の再生リスト<span>{results.playlists.length}</span>
+              </h2>
+              <div className="playlist-list">
+                {results.playlists.map((list, i) => (
+                  <a key={list.id} href={`#/playlist/${list.id}`}>
+                    <span className="playlist-number">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <strong>{list.title}</strong>
+                      <span>
+                        {subjects.find((s) => s.id === list.current)?.name} ·
+                        超わかる！授業動画
+                      </span>
+                    </div>
+                    <span className="external-label">
+                      視聴する
+                      <Play size={15} />
+                    </span>
+                  </a>
+                ))}
               </div>
             </section>
           )}
@@ -1166,7 +1176,7 @@ function AboutPage({ learning }: { learning: LearningStore }) {
             数学Ⅰ「二次関数」の3テーマ、独自の公式・解説・例題、公式YouTubeでタイトル・投稿者を確認した3本の動画を利用できます。サンプルの架空動画は使用していません。
           </p>
           <p>
-            公式サイト掲載の高校数学33再生リストは参照リンクとして登録しています。チャンネル全体の公開動画・新着・Shorts・ライブの一括収録はまだ行っていません。全数学動画の総数は未確定です。
+            公式サイト掲載の高校数学33再生リストは、科目・単元ごとにアプリ内で開けます。動画の個別一覧・チャンネル全体の公開動画・新着・Shorts・ライブの一括収録はまだ行っていません。全数学動画の総数は未確定です。
           </p>
         </section>
         <section>
@@ -1202,7 +1212,7 @@ function AboutPage({ learning }: { learning: LearningStore }) {
             学習記録をJSONで書き出す
           </button>
           <p>
-            YouTubeのサムネイルを表示し、再生操作後に公式プレーヤーへ接続します。接続先には動画IDやIPアドレスなどの情報が伝わります。
+            YouTubeのサムネイルを表示し、再生操作や再生リストの視聴画面を開くと公式プレーヤーへ接続します。接続先には動画・再生リストのIDやIPアドレスなどの情報が伝わります。
           </p>
           <div className="about-links">
             <a
@@ -1261,8 +1271,9 @@ export function App() {
   ).length;
   const activeNav = navId(route.page);
   const topic = getTopic(route.id);
+  const playlist = officialPlaylists.find((p) => p.id === route.id);
   const topTitle =
-    route.page === "watch"
+    route.page === "watch" || route.page === "playlist"
       ? "授業動画"
       : route.page === "material" || route.page === "materials"
         ? "数学教材"
@@ -1278,6 +1289,15 @@ export function App() {
     page = <LibraryPage route={route} learning={learning} />;
   else if (route.page === "materials")
     page = <MaterialsPage learning={learning} />;
+  else if (route.page === "playlist" && playlist)
+    page = (
+      <PlaylistStudy
+        key={playlist.id}
+        playlist={playlist}
+        mode={route.query.get("mode") === "official" ? "official" : "current"}
+        offline={offline}
+      />
+    );
   else if ((route.page === "watch" || route.page === "material") && topic)
     page = (
       <StudyPage
@@ -1456,7 +1476,9 @@ export function App() {
           id="main-content"
           tabIndex={-1}
           className={
-            route.page === "watch" ? "main-content wide" : "main-content"
+            route.page === "watch" || route.page === "playlist"
+              ? "main-content wide"
+              : "main-content"
           }
         >
           {page}

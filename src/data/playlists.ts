@@ -1,12 +1,14 @@
 import type { SubjectId } from "../domain/types";
 
 // References manually transcribed from the creator's public website, not a full video inventory.
-export const officialPlaylists: {
+export interface OfficialPlaylist {
   title: string;
   id: string;
   original: SubjectId;
   current: SubjectId;
-}[] = [
+}
+
+export const officialPlaylists: OfficialPlaylist[] = [
   {
     title: "展開・因数分解",
     id: "PLd3yb0oVJ_W0K8HPAu_zGhqx2sxBlWlsh",

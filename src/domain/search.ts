@@ -1,4 +1,5 @@
 import { topics, videos, subjects } from "../data/catalog";
+import { officialPlaylists } from "../data/playlists";
 
 export function normalizeSearch(value: string) {
   return value
@@ -45,5 +46,14 @@ export function searchCatalog(query: string) {
       matches(v.title + " " + (v.description ?? "") + " 数学Ⅰ 二次関数"),
     ),
     subjects: subjects.filter((s) => matches(s.name + " " + s.units.join(" "))),
+    playlists: officialPlaylists.filter((p) =>
+      matches(
+        p.title +
+          " " +
+          subjects.find((s) => s.id === p.current)?.name +
+          " " +
+          subjects.find((s) => s.id === p.original)?.name,
+      ),
+    ),
   };
 }
