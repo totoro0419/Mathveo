@@ -2040,6 +2040,8 @@ main:focus {
   color: #557eb5;
   font-size: 0.68rem;
   border-radius: 7px;
+  border: 0;
+  background: transparent;
 }
 .playlist-reload:hover {
   background: var(--surface);

@@ -105,7 +105,7 @@ export function PlaylistStudy({
               <span>超わかる！授業動画</span>
             </div>
             <p>
-              プレーヤーの再生リストボタンから、授業動画を選べます。再生・字幕・速度・全画面の操作もプレーヤー内で行えます。
+              プレーヤーの「次の動画」や再生リストから、授業を切り替えられます。再生・字幕・速度・全画面の操作もプレーヤー内で行えます。
             </p>
             {playlist.original !== playlist.current && (
               <p className="playlist-classification">

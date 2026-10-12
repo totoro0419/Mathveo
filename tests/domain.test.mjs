@@ -14,7 +14,7 @@ const server = await createServer({
   server: { middlewareMode: true },
   appType: "custom",
 });
-const { topics, videos, videoTopicLinks } = await server.ssrLoadModule(
+const { topics, videos, videoTopicLinks, subjects } = await server.ssrLoadModule(
   "/src/data/catalog.ts",
 );
 const { officialPlaylists } = await server.ssrLoadModule(
@@ -71,6 +71,17 @@ test("search normalizes Japanese width and quadratic notation; indexes example p
     searchCatalog("開区間").topics.find((t) => t.id === "maximum-minimum"),
   );
   assert.equal(searchCatalog("存在しない数学語abcdef").topics.length, 0);
+  assert.ok(
+    searchCatalog("一次関数").playlists.find((p) => p.title === "１次関数"),
+  );
+  assert.ok(
+    searchCatalog("正負の数").playlists.find(
+      (p) => p.title === "正の数と負の数",
+    ),
+  );
+  assert.ok(
+    searchCatalog("数学2 三角関数").playlists.find((p) => p.current === "II"),
+  );
 });
 test("old subject metadata stays available alongside the current vector mapping", () => {
   const vector = officialPlaylists.find((p) => p.title === "ベクトル");
@@ -79,7 +90,16 @@ test("old subject metadata stays available alongside the current vector mapping"
   const complex = officialPlaylists.find((p) => p.title === "複素数平面");
   assert.equal(complex.original, "III");
   assert.equal(complex.current, "C");
-  assert.equal(officialPlaylists.length, 33);
+  assert.equal(officialPlaylists.length, 45);
+  assert.equal(new Set(officialPlaylists.map((p) => p.id)).size, 45);
+  assert.equal(
+    officialPlaylists.filter((p) => p.current === "junior").length,
+    12,
+  );
+  for (const p of officialPlaylists) {
+    assert.ok(subjects.find((s) => s.id === p.original));
+    assert.ok(subjects.find((s) => s.id === p.current));
+  }
 });
 test("manual video metadata does not fabricate durations, descriptions or permission", () => {
   for (const video of videos) {

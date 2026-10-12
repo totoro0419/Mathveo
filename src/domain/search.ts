@@ -7,6 +7,10 @@ export function normalizeSearch(value: string) {
     .toLowerCase()
     .replace(/２/g, "2")
     .replace(/二次/g, "2次")
+    .replace(/一次/g, "1次")
+    .replace(/正の数と負の数/g, "正負の数")
+    .replace(/数学iii\b/g, "数学3")
+    .replace(/数学ii\b/g, "数学2")
     .replace(/数学i\b/g, "数学1")
     .replace(/数学Ⅰ/g, "数学1")
     .replace(/[\s・、。]/g, "");

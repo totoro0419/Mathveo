@@ -1,6 +1,6 @@
 import type { SubjectId } from "../domain/types";
 
-// References manually transcribed from the creator's public website, not a full video inventory.
+// Official creator website references, checked against its published embeds. Not a full video inventory.
 export interface OfficialPlaylist {
   title: string;
   id: string;
@@ -206,5 +206,77 @@ export const officialPlaylists: OfficialPlaylist[] = [
     id: "PLDnhF1CbeSZnyFqKkOVk7d-YSrGt1W3ZB",
     original: "special",
     current: "special",
+  },
+  {
+    title: "正の数と負の数",
+    id: "PLd3yb0oVJ_W1lbH6t_sSOgj1m9Q_k8ToO",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "文字式",
+    id: "PLd3yb0oVJ_W001tBLpPwmz5o-j-aQxMi_",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "方程式",
+    id: "PLd3yb0oVJ_W1i2Zk4UZPIeCkFog4AD_lu",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "比例と反比例",
+    id: "PLd3yb0oVJ_W3ngPhwihHiMRqHttGfWgYL",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "連立方程式",
+    id: "PLd3yb0oVJ_W3xBnzqwTb_v2aa4-J7BXYD",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "１次関数",
+    id: "PLd3yb0oVJ_W0ayF00BjsYhKIHBvHi1i6E",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "平方根",
+    id: "PLd3yb0oVJ_W3luQIIpZ_qybx3H3cixj_n",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "因数分解",
+    id: "PLd3yb0oVJ_W3WP_EGWUW9tpFYihHCzsG_",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "２次方程式",
+    id: "PLd3yb0oVJ_W110wUdm4SMF-_efjjVR-wq",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "y=ax²（２次関数）",
+    id: "PLd3yb0oVJ_W2LqaobfyqJlUW8SEhdRMpE",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "平面図形",
+    id: "PLd3yb0oVJ_W2v7lXMRr7rRKLvgrOCAq5s",
+    original: "junior",
+    current: "junior",
+  },
+  {
+    title: "空間図形",
+    id: "PLd3yb0oVJ_W37E66EPxR9XGnrQ3mgw-g2",
+    original: "junior",
+    current: "junior",
   },
 ];

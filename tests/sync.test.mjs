@@ -20,7 +20,7 @@ test("ISO 8601 durations are parsed without inventing missing data", () => {
 test("pagination follows tokens and rejects a repeating-token response", async () => {
   assert.equal(
     officialPlaylistIds(await readFile("src/data/playlists.ts", "utf8")).size,
-    33,
+    45,
   );
   const items = await allPages(
     async (_r, p) =>
